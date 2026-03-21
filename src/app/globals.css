@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Manrope", sans-serif;
+  --color-purple-50: #f5f0f7;
+  --color-purple-100: #e8dced;
+  --color-purple-200: #d4c2de;
+  --color-purple-300: #b89cc6;
+  --color-purple-400: #9b76ad;
+  --color-purple-500: #7c5295;
+  --color-purple-600: #6b4580;
+  --color-purple-700: #5a3a6b;
+  --color-purple-800: #4a2f58;
+  --color-purple-900: #3d2649;
+  --color-berry-300: #c47a9e;
+  --color-berry-400: #a0527a;
+  --color-berry-500: #8b3f65;
+  --color-berry-600: #743454;
+  --color-neutral-50: #faf9f8;
+  --color-neutral-100: #f3f1ef;
+  --color-neutral-200: #e8e4e0;
+  --color-neutral-300: #d4cfc9;
+  --color-neutral-400: #b0a9a3;
+  --color-neutral-500: #8a8380;
+  --color-neutral-600: #6b6562;
+  --color-neutral-700: #504b48;
+  --color-neutral-800: #2d2926;
+  --color-tag-protein: #8b3f65;
+  --color-tag-veggie: #4a7c59;
+  --color-tag-low-sugar: #5a7c95;
+  --color-tag-dairy-free: #c47a3a;
+  --color-tag-sweet: #9b76ad;
+  --color-tag-savory: #7c8b5a;
+}
+
+body {
+  background: var(--color-neutral-50);
+  color: var(--color-neutral-800);
+  font-family: var(--font-sans);
+}

@@ -1,0 +1,41 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+export default function GreetingHeader() {
+  const [greeting, setGreeting] = useState('Good morning');
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 17) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+  }, []);
+
+  return (
+    <div className="px-1">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
+            <span className="text-sm">🍽️</span>
+          </div>
+          <span className="text-sm font-semibold text-purple-700">Nourish</span>
+        </div>
+        <button className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+        </button>
+      </div>
+      <div className="mt-6">
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-800">
+          {greeting},<br />Sarah.
+        </h1>
+        <p className="mt-1 text-sm text-neutral-500">Ready for your daily journey?</p>
+      </div>
+    </div>
+  );
+}
