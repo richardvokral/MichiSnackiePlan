@@ -79,3 +79,16 @@ export function getActiveSlot(plan: DailyPlan): MealSlotId | null {
   const active = plan.slots.find((s) => s.status === 'active');
   return active?.slot ?? null;
 }
+
+// Returns a reference-stable snapshot for useSyncExternalStore. Only allocates a
+// new object when the underlying plan actually changes, preventing render loops.
+let snapshotCache: { key: string; plan: DailyPlan } | null = null;
+
+export function getDailyPlanSnapshot(): DailyPlan {
+  const plan = getDailyPlan();
+  const key = JSON.stringify(plan);
+  if (!snapshotCache || snapshotCache.key !== key) {
+    snapshotCache = { key, plan };
+  }
+  return snapshotCache.plan;
+}
