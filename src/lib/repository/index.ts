@@ -19,3 +19,18 @@ export {
   removeAdmin,
   isAdminEmail,
 } from './admins';
+
+export {
+  createFreshSlots,
+  getUserPlan,
+  saveUserPlan,
+  listUserPlanDates,
+  getRecentSelectedMealIds,
+} from './plans';
+
+export {
+  getUserPreferences,
+  setUserPreference,
+  removeUserPreference,
+} from './preferences';
+export type { MealPreferences } from './preferences';

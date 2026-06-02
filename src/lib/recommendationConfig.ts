@@ -7,10 +7,12 @@ export interface RecommendationConfig {
     sameStyleAsPrevPenalty: number;
     alternatingSweetSavoryReward: number;
     newCategoryReward: number;
+    crossDayRepeatPenalty: number;
   };
   thresholds: {
     dairyCountThreshold: number;
     breadCountThreshold: number;
+    crossDayLookbackDays: number;
   };
   rules: {
     noExactRepeat: boolean;
@@ -18,6 +20,7 @@ export interface RecommendationConfig {
     noSameProteinGroupAsPrev: boolean;
     noSameCategoryAsPrev: boolean;
     lunchDinnerRequireVeg: boolean;
+    crossDayVarietyEnabled: boolean;
   };
 }
 
@@ -30,10 +33,12 @@ export const DEFAULT_RECOMMENDATION_CONFIG: RecommendationConfig = {
     sameStyleAsPrevPenalty: -10,
     alternatingSweetSavoryReward: 10,
     newCategoryReward: 5,
+    crossDayRepeatPenalty: -15,
   },
   thresholds: {
     dairyCountThreshold: 2,
     breadCountThreshold: 2,
+    crossDayLookbackDays: 2,
   },
   rules: {
     noExactRepeat: true,
@@ -41,5 +46,6 @@ export const DEFAULT_RECOMMENDATION_CONFIG: RecommendationConfig = {
     noSameProteinGroupAsPrev: true,
     noSameCategoryAsPrev: true,
     lunchDinnerRequireVeg: true,
+    crossDayVarietyEnabled: true,
   },
 };

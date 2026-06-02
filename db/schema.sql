@@ -40,4 +40,22 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at      timestamptz NOT NULL DEFAULT now()
 );
 
-INSERT INTO schema_migrations (version) VALUES ('001_init') ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS user_daily_plans (
+  user_id     text NOT NULL,
+  date        text NOT NULL,
+  slots       jsonb NOT NULL,
+  updated_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_daily_plans_user ON user_daily_plans(user_id, date DESC);
+
+CREATE TABLE IF NOT EXISTS user_meal_preferences (
+  user_id     text NOT NULL,
+  slot        text NOT NULL,
+  meal_id     text NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, slot)
+);
+
+INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data') ON CONFLICT DO NOTHING;

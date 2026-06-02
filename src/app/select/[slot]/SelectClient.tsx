@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Meal, MealSlotId, SLOT_LABELS, SLOT_SUBTITLES, SLOT_ORDER } from '@/lib/types';
+import { DailyPlan, Meal, MealSlotId, SLOT_LABELS, SLOT_SUBTITLES, SLOT_ORDER } from '@/lib/types';
 import { getDailyPlan, selectMeal, skipMeal } from '@/lib/store';
 import { getRecommendations } from '@/lib/recommendations';
 import { RecommendationConfig } from '@/lib/recommendationConfig';
+import { selectMealForDay, skipMealForDay } from '@/app/plan/actions';
 import StepProgress from '@/components/StepProgress';
 import MealOptionCard from '@/components/MealOptionCard';
 
@@ -13,31 +14,73 @@ interface SelectClientProps {
   slot: MealSlotId;
   meals: Meal[];
   config: RecommendationConfig;
+  isAuthenticated: boolean;
+  date: string;
+  initialPlan: DailyPlan | null;
+  recentMealIds: string[];
+  pinnedMealId: string | null;
 }
 
-export default function SelectClient({ slot, meals, config }: SelectClientProps) {
+export default function SelectClient({
+  slot,
+  meals,
+  config,
+  isAuthenticated,
+  date,
+  initialPlan,
+  recentMealIds,
+  pinnedMealId,
+}: SelectClientProps) {
   const router = useRouter();
-  const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [busyMealId, setBusyMealId] = useState<string | null>(null);
 
   const stepIndex = SLOT_ORDER.indexOf(slot) + 1;
   const label = SLOT_LABELS[slot] || slot;
   const subtitle = SLOT_SUBTITLES[slot] || '';
 
-  const recommended = useMemo(() => {
-    if (typeof window === 'undefined') return [];
-    const plan = getDailyPlan();
-    return getRecommendations(slot, plan, meals, config);
-  }, [slot, meals, config]);
+  const homeHref = isAuthenticated ? `/?date=${date}` : '/';
 
-  function handleConfirm() {
-    if (!selectedMeal) return;
-    selectMeal(slot, selectedMeal.id);
-    router.push('/');
+  // Resolve the plan: DB plan (signed-in) or localStorage (anonymous, today).
+  const plan = useMemo<DailyPlan | null>(() => {
+    if (isAuthenticated) return initialPlan;
+    if (typeof window === 'undefined') return null;
+    return getDailyPlan();
+  }, [isAuthenticated, initialPlan]);
+
+  const currentMealId = plan?.slots.find((s) => s.slot === slot)?.selectedMealId ?? null;
+
+  const recommended = useMemo(() => {
+    if (!plan) return [];
+    return getRecommendations(slot, plan, meals, config, {
+      recentMealIds,
+      pinnedMealId,
+    });
+  }, [plan, slot, meals, config, recentMealIds, pinnedMealId]);
+
+  function handleChoose(meal: Meal) {
+    setBusyMealId(meal.id);
+    if (isAuthenticated) {
+      startTransition(async () => {
+        await selectMealForDay(date, slot, meal.id);
+        router.push(homeHref);
+      });
+    } else {
+      selectMeal(slot, meal.id);
+      router.push('/');
+    }
   }
 
   function handleSkip() {
-    skipMeal(slot);
-    router.push('/');
+    if (isAuthenticated) {
+      startTransition(async () => {
+        await skipMealForDay(date, slot);
+        router.push(homeHref);
+      });
+    } else {
+      skipMeal(slot);
+      router.push('/');
+    }
   }
 
   return (
@@ -46,7 +89,7 @@ export default function SelectClient({ slot, meals, config }: SelectClientProps)
         {/* Header */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push(homeHref)}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-100"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,8 +120,10 @@ export default function SelectClient({ slot, meals, config }: SelectClientProps)
             <MealOptionCard
               key={meal.id}
               meal={meal}
-              selected={selectedMeal?.id === meal.id}
-              onSelect={setSelectedMeal}
+              isPinned={meal.id === pinnedMealId}
+              isCurrent={meal.id === currentMealId}
+              pending={isPending && busyMealId === meal.id}
+              onChoose={handleChoose}
             />
           ))}
           {recommended.length === 0 && (
@@ -89,22 +134,12 @@ export default function SelectClient({ slot, meals, config }: SelectClientProps)
           )}
         </div>
 
-        {/* Actions */}
+        {/* Skip */}
         <div className="mt-8">
           <button
-            onClick={handleConfirm}
-            disabled={!selectedMeal}
-            className={`w-full rounded-full py-4 text-center text-base font-semibold transition-colors ${
-              selectedMeal
-                ? 'bg-purple-600 text-white shadow-md hover:bg-purple-700'
-                : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-            }`}
-          >
-            Confirm Selection
-          </button>
-          <button
             onClick={handleSkip}
-            className="mt-3 w-full py-2 text-center text-sm font-medium text-neutral-400 transition-colors hover:text-neutral-600"
+            disabled={isPending}
+            className="w-full py-2 text-center text-sm font-medium text-neutral-400 transition-colors hover:text-neutral-600 disabled:opacity-50"
           >
             I&apos;m not hungry right now
           </button>

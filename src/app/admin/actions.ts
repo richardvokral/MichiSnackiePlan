@@ -107,10 +107,12 @@ export async function updateConfigAction(formData: FormData) {
       sameStyleAsPrevPenalty: Number(formData.get('sameStyleAsPrevPenalty')) || 0,
       alternatingSweetSavoryReward: Number(formData.get('alternatingSweetSavoryReward')) || 0,
       newCategoryReward: Number(formData.get('newCategoryReward')) || 0,
+      crossDayRepeatPenalty: Number(formData.get('crossDayRepeatPenalty')) || 0,
     },
     thresholds: {
       dairyCountThreshold: Number(formData.get('dairyCountThreshold')) || 2,
       breadCountThreshold: Number(formData.get('breadCountThreshold')) || 2,
+      crossDayLookbackDays: Number(formData.get('crossDayLookbackDays')) || 2,
     },
     rules: {
       noExactRepeat: formData.get('noExactRepeat') === 'on',
@@ -118,10 +120,11 @@ export async function updateConfigAction(formData: FormData) {
       noSameProteinGroupAsPrev: formData.get('noSameProteinGroupAsPrev') === 'on',
       noSameCategoryAsPrev: formData.get('noSameCategoryAsPrev') === 'on',
       lunchDinnerRequireVeg: formData.get('lunchDinnerRequireVeg') === 'on',
+      crossDayVarietyEnabled: formData.get('crossDayVarietyEnabled') === 'on',
     },
   };
 
-  await updateRecommendationConfig(config, admin.email);
+  await updateRecommendationConfig(config, admin.email ?? undefined);
   revalidatePath('/admin/config');
   revalidatePath('/');
 }
@@ -131,7 +134,7 @@ const emailSchema = z.email();
 export async function addAdminAction(formData: FormData) {
   const admin = await requireAdmin();
   const email = emailSchema.parse(formData.get('email'));
-  await addAdmin(email, admin.email);
+  await addAdmin(email, admin.email ?? 'system');
   revalidatePath('/admin/admins');
 }
 

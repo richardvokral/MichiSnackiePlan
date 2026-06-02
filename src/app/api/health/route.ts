@@ -27,7 +27,21 @@ export async function GET() {
   checks.push({
     name: 'AUTH_ENABLED',
     ok: true,
-    detail: process.env.AUTH_ENABLED === 'true' ? 'enabled' : 'disabled (pass-through)',
+    detail: process.env.AUTH_ENABLED === 'true' ? 'enabled' : 'disabled (admin pass-through)',
+  });
+
+  const logtoConfigured = Boolean(
+    process.env.LOGTO_ENDPOINT &&
+      process.env.LOGTO_APP_ID &&
+      process.env.LOGTO_APP_SECRET &&
+      process.env.LOGTO_BASE_URL,
+  );
+  checks.push({
+    name: 'Logto configured',
+    ok: true,
+    detail: logtoConfigured
+      ? 'yes (user sign-in available)'
+      : 'no (app runs anonymous, today-only)',
   });
 
   // 2. Database connection + tables
@@ -41,6 +55,8 @@ export async function GET() {
         meals: () => sql`SELECT count(*)::int AS count FROM meals`,
         recommendation_config: () => sql`SELECT count(*)::int AS count FROM recommendation_config`,
         admins: () => sql`SELECT count(*)::int AS count FROM admins`,
+        user_daily_plans: () => sql`SELECT count(*)::int AS count FROM user_daily_plans`,
+        user_meal_preferences: () => sql`SELECT count(*)::int AS count FROM user_meal_preferences`,
       };
 
       for (const [table, query] of Object.entries(tableQueries)) {

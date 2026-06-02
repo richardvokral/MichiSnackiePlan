@@ -4,12 +4,21 @@ import {
   DEFAULT_RECOMMENDATION_CONFIG,
 } from './recommendationConfig';
 
+export interface RecommendationContext {
+  // Meal ids selected on recent previous days (for cross-day variety).
+  recentMealIds?: string[];
+  // The user's pinned recurring meal for this slot (e.g. oatmeal every breakfast).
+  pinnedMealId?: string | null;
+}
+
 export function getRecommendations(
   slot: MealSlotId,
   plan: DailyPlan,
   allMeals: Meal[],
   config: RecommendationConfig = DEFAULT_RECOMMENDATION_CONFIG,
+  context: RecommendationContext = {},
 ): Meal[] {
+  const recentMealIds = new Set(context.recentMealIds ?? []);
   const slotIndex = SLOT_ORDER.indexOf(slot);
   const mealMap = new Map(allMeals.map((m) => [m.id, m]));
 
@@ -87,10 +96,26 @@ export function getRecommendations(
       score += config.weights.newCategoryReward;
     }
 
+    // Cross-day variety: discourage meals eaten in the recent lookback window.
+    if (config.rules.crossDayVarietyEnabled && recentMealIds.has(meal.id)) {
+      score += config.weights.crossDayRepeatPenalty;
+    }
+
     return { meal, score };
   });
 
   scored.sort((a, b) => b.score - a.score);
 
-  return scored.map((s) => s.meal);
+  const ordered = scored.map((s) => s.meal);
+
+  // A pinned recurring preference always surfaces first ("your usual").
+  if (context.pinnedMealId) {
+    const pinnedIndex = ordered.findIndex((m) => m.id === context.pinnedMealId);
+    if (pinnedIndex > 0) {
+      const [pinned] = ordered.splice(pinnedIndex, 1);
+      ordered.unshift(pinned);
+    }
+  }
+
+  return ordered;
 }

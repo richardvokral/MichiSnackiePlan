@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
-import { Meal } from '@/lib/types';
+import { DailyPlan, Meal } from '@/lib/types';
 import { getDailyPlanSnapshot, getCompletedCount, getActiveSlot } from '@/lib/store';
 import { getTodaysIntention } from '@/data/intentions';
 import GreetingHeader from '@/components/GreetingHeader';
@@ -14,12 +15,45 @@ import BottomNav from '@/components/BottomNav';
 const emptySubscribe = () => () => {};
 const getServerSnapshot = () => null;
 
-interface HomeClientProps {
-  mealMap: Record<string, Meal>;
+function addDays(dateStr: string, delta: number): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + delta);
+  return d.toISOString().slice(0, 10);
 }
 
-export default function HomeClient({ mealMap }: HomeClientProps) {
-  const plan = useSyncExternalStore(emptySubscribe, getDailyPlanSnapshot, getServerSnapshot);
+function formatDay(dateStr: string, isToday: boolean): string {
+  if (isToday) return 'Today';
+  const today = new Date().toISOString().slice(0, 10);
+  if (dateStr === addDays(today, -1)) return 'Yesterday';
+  if (dateStr === addDays(today, 1)) return 'Tomorrow';
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+interface HomeClientProps {
+  mealMap: Record<string, Meal>;
+  isAuthenticated: boolean;
+  userEmail: string | null;
+  initialPlan: DailyPlan | null;
+  date: string;
+  isToday: boolean;
+}
+
+export default function HomeClient({
+  mealMap,
+  isAuthenticated,
+  userEmail,
+  initialPlan,
+  date,
+  isToday,
+}: HomeClientProps) {
+  // Anonymous users keep a today-only plan in localStorage; authenticated users
+  // get their persisted plan for the selected day from the server.
+  const localPlan = useSyncExternalStore(emptySubscribe, getDailyPlanSnapshot, getServerSnapshot);
+  const plan = isAuthenticated ? initialPlan : localPlan;
 
   if (!plan) {
     return (
@@ -32,11 +66,57 @@ export default function HomeClient({ mealMap }: HomeClientProps) {
   const intention = getTodaysIntention(plan.date);
   const completed = getCompletedCount(plan);
   const activeSlot = getActiveSlot(plan);
+  const journeyDate = isAuthenticated ? date : undefined;
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-28 md:pb-8">
       <div className="mx-auto max-w-lg px-5 pt-6">
+        {/* Account bar */}
+        <div className="mb-4 flex items-center justify-between text-xs">
+          {isAuthenticated ? (
+            <>
+              <span className="truncate text-neutral-500">{userEmail ?? 'Signed in'}</span>
+              <div className="flex items-center gap-3">
+                <Link href="/preferences" className="font-medium text-purple-600 hover:text-purple-700">
+                  Preferences
+                </Link>
+                <a href="/auth/sign-out" className="text-neutral-400 hover:text-neutral-600">
+                  Sign out
+                </a>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-neutral-400">Using today only · not signed in</span>
+              <a href="/auth/sign-in" className="font-semibold text-purple-600 hover:text-purple-700">
+                Sign in
+              </a>
+            </>
+          )}
+        </div>
+
         <GreetingHeader />
+
+        {/* Day navigation (signed-in, multi-day) */}
+        {isAuthenticated && (
+          <div className="mt-5 flex items-center justify-between rounded-2xl bg-white px-4 py-2 shadow-sm">
+            <Link
+              href={`/?date=${addDays(date, -1)}`}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100"
+              aria-label="Previous day"
+            >
+              ‹
+            </Link>
+            <span className="text-sm font-semibold text-neutral-700">{formatDay(date, isToday)}</span>
+            <Link
+              href={`/?date=${addDays(date, 1)}`}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100"
+              aria-label="Next day"
+            >
+              ›
+            </Link>
+          </div>
+        )}
 
         <div className="mt-6">
           <IntentionCard intention={intention} />
@@ -56,13 +136,14 @@ export default function HomeClient({ mealMap }: HomeClientProps) {
                 key={slotState.slot}
                 slotState={slotState}
                 mealMap={mealMap}
+                date={journeyDate}
               />
             ))}
           </div>
         </div>
       </div>
 
-      <FloatingActionButton activeSlot={activeSlot} />
+      <FloatingActionButton activeSlot={activeSlot} date={journeyDate} />
       <BottomNav />
     </div>
   );
