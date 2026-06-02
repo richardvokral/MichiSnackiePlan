@@ -1,12 +1,14 @@
 export type MealSlotId = 'breakfast' | 'snack_am' | 'lunch' | 'snack_pm' | 'dinner';
 
-export type MealStatus = 'completed' | 'active' | 'planned' | 'skipped';
+export type SlotStatus = 'completed' | 'active' | 'planned' | 'skipped';
 
 export type ProteinGroup = 'dairy' | 'eggs' | 'meat' | 'fish' | 'plant' | 'nuts_seeds' | 'supplement_protein';
 
 export type MealStyle = 'sweet' | 'savory' | 'bowl' | 'sandwich' | 'salad' | 'light' | 'main_meal';
 
 export type FruitOrVeg = 'fruit' | 'veg' | 'both' | 'none';
+
+export type MealCatalogStatus = 'draft' | 'published' | 'inactive';
 
 export interface Meal {
   id: string;
@@ -21,11 +23,13 @@ export interface Meal {
   fruitOrVeg: FruitOrVeg;
   tags: string[];
   emoji: string;
+  imageUrl: string | null;
+  status: MealCatalogStatus;
 }
 
 export interface SlotState {
   slot: MealSlotId;
-  status: MealStatus;
+  status: SlotStatus;
   selectedMealId: string | null;
   selectedAt: string | null;
 }

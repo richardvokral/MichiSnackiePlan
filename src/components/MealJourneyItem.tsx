@@ -1,18 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { MealSlotId, SlotState, SLOT_LABELS, SLOT_ICONS, SLOT_TIMES } from '@/lib/types';
-import { getMealById } from '@/data/meals';
+import { Meal, SlotState, SLOT_LABELS, SLOT_ICONS, SLOT_TIMES } from '@/lib/types';
 
 interface MealJourneyItemProps {
   slotState: SlotState;
+  mealMap: Record<string, Meal>;
 }
 
-export default function MealJourneyItem({ slotState }: MealJourneyItemProps) {
+export default function MealJourneyItem({ slotState, mealMap }: MealJourneyItemProps) {
   const { slot, status, selectedMealId } = slotState;
   const label = SLOT_LABELS[slot];
   const icon = SLOT_ICONS[slot];
-  const meal = selectedMealId ? getMealById(selectedMealId) : null;
+  const meal = selectedMealId ? mealMap[selectedMealId] : null;
 
   if (status === 'active') {
     return (

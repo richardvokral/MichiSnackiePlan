@@ -15,6 +15,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'fruit',
     tags: ['LOW SUGAR'],
     emoji: '🫐',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_002',
@@ -29,6 +31,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['VEGGIE', 'PROTEIN'],
     emoji: '🥑',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_003',
@@ -43,6 +47,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'fruit',
     tags: ['DAIRY-FREE'],
     emoji: '🥣',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_004',
@@ -57,6 +63,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'none',
     tags: ['PROTEIN'],
     emoji: '🍳',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_005',
@@ -71,6 +79,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'fruit',
     tags: ['PROTEIN', 'DAIRY-FREE'],
     emoji: '🥤',
+    imageUrl: null,
+    status: 'published',
   },
 
   // === SNACKS ===
@@ -87,6 +97,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'fruit',
     tags: ['DAIRY-FREE'],
     emoji: '🥜',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_007',
@@ -101,6 +113,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'none',
     tags: ['PROTEIN'],
     emoji: '🧀',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_008',
@@ -115,6 +129,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'fruit',
     tags: ['DAIRY-FREE', 'VEGGIE'],
     emoji: '🍎',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_009',
@@ -129,6 +145,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'none',
     tags: ['LOW SUGAR', 'PROTEIN'],
     emoji: '🍯',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_010',
@@ -143,6 +161,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['VEGGIE', 'DAIRY-FREE'],
     emoji: '🥕',
+    imageUrl: null,
+    status: 'published',
   },
 
   // === LUNCH ===
@@ -159,6 +179,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['PROTEIN'],
     emoji: '🥗',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_012',
@@ -173,6 +195,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['VEGGIE', 'DAIRY-FREE'],
     emoji: '🍲',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_013',
@@ -187,6 +211,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['PROTEIN'],
     emoji: '🌯',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_014',
@@ -201,6 +227,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['VEGGIE', 'DAIRY-FREE'],
     emoji: '🥙',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_015',
@@ -215,6 +243,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['PROTEIN'],
     emoji: '🥚',
+    imageUrl: null,
+    status: 'published',
   },
 
   // === DINNER ===
@@ -231,6 +261,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['PROTEIN'],
     emoji: '🐟',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_017',
@@ -245,6 +277,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['PROTEIN'],
     emoji: '🍗',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_018',
@@ -259,6 +293,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['VEGGIE', 'DAIRY-FREE'],
     emoji: '🍛',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_019',
@@ -273,6 +309,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['VEGGIE'],
     emoji: '🍝',
+    imageUrl: null,
+    status: 'published',
   },
   {
     id: 'meal_020',
@@ -287,6 +325,8 @@ export const meals: Meal[] = [
     fruitOrVeg: 'veg',
     tags: ['VEGGIE', 'DAIRY-FREE'],
     emoji: '🫘',
+    imageUrl: null,
+    status: 'published',
   },
 ];
 
