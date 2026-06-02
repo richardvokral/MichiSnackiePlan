@@ -2,6 +2,8 @@ import { getPublishedMeals, getRecommendationConfig } from '@/lib/repository';
 import { MealSlotId } from '@/lib/types';
 import SelectClient from './SelectClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SelectMealPage({
   params,
 }: {
