@@ -94,7 +94,10 @@ export async function getMealWithMeta(id: string): Promise<(Meal & { updatedAt: 
   const rows = await sql`SELECT * FROM meals WHERE id = ${id}`;
   if (rows.length === 0) return null;
   const row = rows[0] as MealRow;
-  return { ...rowToMeal(row), updatedAt: row.updated_at };
+  // Normalize to a full-precision ISO string so the value round-trips through the
+  // edit form unchanged. (Neon returns timestamptz as a Date; rendering it into an
+  // input would drop milliseconds and break the optimistic-concurrency check.)
+  return { ...rowToMeal(row), updatedAt: new Date(row.updated_at).toISOString() };
 }
 
 export async function createMeal(input: MealInput): Promise<Meal> {
