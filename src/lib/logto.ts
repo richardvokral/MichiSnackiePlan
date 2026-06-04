@@ -1,10 +1,14 @@
 import { LogtoNextConfig, UserScope } from '@logto/next';
 
+// Strip any trailing slash so the SDK builds "<base>/callback", never "<base>//callback"
+// (a double slash won't match the redirect URI registered in Logto).
+const baseUrl = (process.env.LOGTO_BASE_URL ?? '').replace(/\/+$/, '');
+
 export const logtoConfig: LogtoNextConfig = {
   endpoint: process.env.LOGTO_ENDPOINT ?? '',
   appId: process.env.LOGTO_APP_ID ?? '',
   appSecret: process.env.LOGTO_APP_SECRET ?? '',
-  baseUrl: process.env.LOGTO_BASE_URL ?? '',
+  baseUrl,
   cookieSecret: process.env.LOGTO_COOKIE_SECRET ?? '',
   cookieSecure: process.env.NODE_ENV === 'production',
   scopes: [UserScope.Email, UserScope.Profile],
