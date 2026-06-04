@@ -22,6 +22,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/admins" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
             Admins
           </Link>
+          <Link href="/admin/migrations" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
+            Migrations
+          </Link>
           <div className="flex-1" />
           <Link href="/" className="text-sm text-neutral-400 hover:text-neutral-600">
             Back to App

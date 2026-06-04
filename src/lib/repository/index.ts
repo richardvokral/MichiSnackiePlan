@@ -39,3 +39,8 @@ export {
   getUserDietPreferences,
   setUserDietPreferences,
 } from './dietPreferences';
+
+export {
+  getMigrationStatus,
+  runAndVerifyMigrations,
+} from './migrations';
