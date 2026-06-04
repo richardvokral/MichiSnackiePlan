@@ -6,7 +6,33 @@ export {
   createMeal,
   updateMeal,
   setMealStatus,
+  enrichMealsWithDietInfo,
+  getPublishedMealsWithDietInfo,
+  getMealDetail,
+  getPublishedMealsForUser,
+  listUserMeals,
+  createUserMeal,
 } from './meals';
+
+export {
+  listIngredients,
+  getIngredientById,
+  createIngredient,
+  updateIngredient,
+  deleteIngredient,
+} from './ingredients';
+
+export {
+  getMealIngredients,
+  setMealIngredients,
+} from './mealIngredients';
+export type { MealIngredientInput } from './mealIngredients';
+
+export {
+  getUserFavoriteIds,
+  addFavorite,
+  removeFavorite,
+} from './favorites';
 
 export {
   getRecommendationConfig,

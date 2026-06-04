@@ -1,5 +1,5 @@
 import { getCurrentUser, isAdmin } from '@/lib/auth';
-import { getPublishedMeals, getUserPlan, getUserDietPreferences } from '@/lib/repository';
+import { getPublishedMealsForUser, getUserPlan, getUserDietPreferences } from '@/lib/repository';
 import { DailyPlan, Meal } from '@/lib/types';
 import HomeClient from './HomeClient';
 
@@ -16,7 +16,7 @@ export default async function Home({
 }) {
   const { date } = await searchParams;
   const user = await getCurrentUser();
-  const meals = await getPublishedMeals();
+  const meals = await getPublishedMealsForUser(user?.id ?? null);
   const mealMap: Record<string, Meal> = {};
   for (const m of meals) mealMap[m.id] = m;
 

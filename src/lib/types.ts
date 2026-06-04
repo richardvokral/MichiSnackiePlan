@@ -32,6 +32,43 @@ export interface Meal {
   dietType?: DietType | null; // explicit classification override; derived from proteinGroup when null
   allergens?: string[]; // manual allergen tags (effective allergens may be derived from ingredients later)
   allergensOverride?: boolean; // when true, `allergens` is authoritative over any derived set
+  ownerUserId?: string | null; // null = public catalog meal; set = private to that user
+  // Hydrated only on the meal-detail path (not the bulk selection list):
+  ingredients?: MealIngredient[];
+  nutrition?: MealNutrition | null;
+}
+
+// A master-list food item with optional per-100g nutrition + allergen/diet flags.
+export interface Ingredient {
+  id: string;
+  name: string;
+  calories: number | null; // kcal per 100g
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  allergens: string[];
+  dietType: DietType | null;
+  usdaFdcId: string | null; // reserved for future USDA FoodData Central sync
+}
+
+// An ingredient attached to a meal with an amount. `ingredient` is hydrated when
+// the row is joined to the ingredients table.
+export interface MealIngredient {
+  ingredientId: string;
+  quantity: number;
+  unit: string; // g | ml | piece | ...
+  sortOrder?: number;
+  ingredient?: Ingredient;
+}
+
+// Aggregated nutrition for a meal. `approximate` is true when some ingredient used
+// a non-scalable unit (e.g. "piece") or was missing nutrition data.
+export interface MealNutrition {
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  approximate: boolean;
 }
 
 export interface SlotState {

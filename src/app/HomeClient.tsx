@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore, useTransition } from 'react';
 import { DailyPlan, Meal } from '@/lib/types';
 import { getDailyPlanSnapshot, getCompletedCount, getActiveSlot } from '@/lib/store';
-import { getDietPrefsSnapshot } from '@/lib/dietStore';
+import { getDietPrefs, getDietPrefsSnapshot, clearDietPrefs } from '@/lib/dietStore';
+import { importDietPreferencesAction } from '@/app/preferences/diet/actions';
 import { getTodaysIntention } from '@/data/intentions';
 import GreetingHeader from '@/components/GreetingHeader';
 import IntentionCard from '@/components/IntentionCard';
@@ -12,6 +13,7 @@ import DailyProgress from '@/components/DailyProgress';
 import MealJourneyItem from '@/components/MealJourneyItem';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import BottomNav from '@/components/BottomNav';
+import Modal from '@/components/Modal';
 
 const emptySubscribe = () => () => {};
 const getServerSnapshot = () => null;
@@ -65,9 +67,30 @@ export default function HomeClient({
   // Diet prefs: server-provided for signed-in users; for anonymous users, read
   // this device's localStorage copy so the CTA reflects what they've set.
   const localDietPrefs = useSyncExternalStore(emptySubscribe, getDietPrefsSnapshot, getServerSnapshot);
-  const hasPrefs = isAuthenticated
-    ? hasDietPrefs
-    : Boolean(localDietPrefs && (localDietPrefs.dietType || localDietPrefs.allergies.length > 0));
+  const localHasPrefs = Boolean(
+    localDietPrefs && (localDietPrefs.dietType || localDietPrefs.allergies.length > 0),
+  );
+  const hasPrefs = isAuthenticated ? hasDietPrefs : localHasPrefs;
+
+  // Offer to import a just-signed-in user's local prefs into their account
+  // (only when the account doesn't already have prefs).
+  const [importDismissed, setImportDismissed] = useState(false);
+  const [imported, setImported] = useState(false);
+  const [importing, startImport] = useTransition();
+  const showImport = isAuthenticated && !hasDietPrefs && localHasPrefs && !importDismissed && !imported;
+
+  function doImport() {
+    startImport(async () => {
+      const local = getDietPrefs();
+      if (!local) {
+        setImportDismissed(true);
+        return;
+      }
+      await importDietPreferencesAction({ dietType: local.dietType, allergies: local.allergies });
+      clearDietPrefs();
+      setImported(true);
+    });
+  }
 
   if (!plan) {
     return (
@@ -96,6 +119,9 @@ export default function HomeClient({
                     Admin
                   </Link>
                 )}
+                <Link href="/meals" className="font-medium text-purple-600 hover:text-purple-700">
+                  My meals
+                </Link>
                 <Link href="/preferences" className="font-medium text-purple-600 hover:text-purple-700">
                   Preferences
                 </Link>
@@ -176,6 +202,32 @@ export default function HomeClient({
 
       <FloatingActionButton activeSlot={activeSlot} date={journeyDate} />
       <BottomNav />
+
+      <Modal
+        open={showImport}
+        onClose={() => setImportDismissed(true)}
+        title="Import your food preferences?"
+      >
+        <p className="text-sm leading-relaxed text-neutral-500">
+          You set allergies &amp; diet on this device before signing in. Import them to your account
+          so they follow you everywhere?
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <button
+            onClick={doImport}
+            disabled={importing}
+            className="w-full rounded-full bg-purple-600 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-purple-700 disabled:bg-neutral-300"
+          >
+            {importing ? 'Importing…' : 'Import preferences'}
+          </button>
+          <button
+            onClick={() => setImportDismissed(true)}
+            className="w-full py-2 text-center text-sm font-medium text-neutral-400 transition-colors hover:text-neutral-600"
+          >
+            Not now
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

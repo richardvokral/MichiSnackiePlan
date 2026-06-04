@@ -19,9 +19,12 @@ CREATE TABLE IF NOT EXISTS meals (
   diet_type       text,
   allergens       text[] NOT NULL DEFAULT '{}',
   allergens_override boolean NOT NULL DEFAULT false,
+  owner_user_id   text,
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_meals_owner ON meals(owner_user_id);
 
 CREATE INDEX IF NOT EXISTS idx_meals_status ON meals(status);
 
@@ -68,4 +71,40 @@ CREATE TABLE IF NOT EXISTS user_diet_preferences (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet') ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS ingredients (
+  id          text PRIMARY KEY,
+  name        text NOT NULL,
+  calories    numeric,
+  protein_g   numeric,
+  carbs_g     numeric,
+  fat_g       numeric,
+  allergens   text[] NOT NULL DEFAULT '{}',
+  diet_type   text,
+  usda_fdc_id text,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name);
+
+CREATE TABLE IF NOT EXISTS meal_ingredients (
+  meal_id       text NOT NULL REFERENCES meals(id) ON DELETE CASCADE,
+  ingredient_id text NOT NULL REFERENCES ingredients(id) ON DELETE RESTRICT,
+  quantity      numeric NOT NULL DEFAULT 0,
+  unit          text NOT NULL DEFAULT 'g',
+  sort_order    integer NOT NULL DEFAULT 0,
+  PRIMARY KEY (meal_id, ingredient_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_meal_ingredients_meal ON meal_ingredients(meal_id);
+
+CREATE TABLE IF NOT EXISTS user_favorites (
+  user_id    text NOT NULL,
+  meal_id    text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, meal_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
+
+INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet'), ('004_ingredients'), ('005_user_meals'), ('006_favorites') ON CONFLICT DO NOTHING;

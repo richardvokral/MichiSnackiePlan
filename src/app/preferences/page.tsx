@@ -27,7 +27,18 @@ export default async function PreferencesPage() {
           <div className="w-10" />
         </div>
 
-        <h1 className="mt-6 text-2xl font-bold text-neutral-800">Recurring meals</h1>
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Link href="/preferences/diet" className="rounded-2xl bg-white p-4 text-center shadow-sm transition-shadow hover:shadow-md">
+            <p className="text-2xl">🥗</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-700">Allergies &amp; diet</p>
+          </Link>
+          <Link href="/preferences/favorites" className="rounded-2xl bg-white p-4 text-center shadow-sm transition-shadow hover:shadow-md">
+            <p className="text-2xl">♥</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-700">Favorites</p>
+          </Link>
+        </div>
+
+        <h1 className="mt-8 text-2xl font-bold text-neutral-800">Recurring meals</h1>
         <p className="mt-1 text-sm text-neutral-500">
           Pin a meal you always want for a slot (e.g. oatmeal every breakfast). It will
           appear first as “Your usual” when you plan that slot. Leave a slot on “No preference”

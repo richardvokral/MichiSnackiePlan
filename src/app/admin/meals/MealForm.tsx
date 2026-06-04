@@ -1,6 +1,6 @@
 'use client';
 
-import { Meal } from '@/lib/types';
+import { Meal, Ingredient, MealIngredient } from '@/lib/types';
 import { DIET_TYPES, ALLERGENS } from '@/lib/diet';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -10,16 +10,60 @@ const PROTEIN_GROUPS = ['dairy', 'eggs', 'meat', 'fish', 'plant', 'nuts_seeds', 
 const MEAL_STYLES = ['sweet', 'savory', 'bowl', 'sandwich', 'salad', 'light', 'main_meal'];
 const FRUIT_VEG_OPTIONS = ['fruit', 'veg', 'both', 'none'];
 const STATUS_OPTIONS = ['draft', 'published', 'inactive'];
+const UNIT_OPTIONS = ['g', 'ml', 'piece'];
+
+interface IngredientRow {
+  ingredientId: string;
+  quantity: string;
+  unit: string;
+}
 
 interface MealFormProps {
   meal?: Meal & { updatedAt?: string };
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
+  allIngredients?: Ingredient[];
+  initialMealIngredients?: MealIngredient[];
+  hideStatus?: boolean;
 }
 
-export default function MealForm({ meal, action, submitLabel }: MealFormProps) {
+export default function MealForm({
+  meal,
+  action,
+  submitLabel,
+  allIngredients = [],
+  initialMealIngredients = [],
+  hideStatus = false,
+}: MealFormProps) {
   const [imageUrl, setImageUrl] = useState(meal?.imageUrl || '');
   const [uploading, setUploading] = useState(false);
+  const [rows, setRows] = useState<IngredientRow[]>(
+    initialMealIngredients.map((mi) => ({
+      ingredientId: mi.ingredientId,
+      quantity: String(mi.quantity),
+      unit: mi.unit,
+    })),
+  );
+  const [toAdd, setToAdd] = useState('');
+
+  const ingredientName = new Map(allIngredients.map((i) => [i.id, i.name]));
+  const available = allIngredients.filter((i) => !rows.some((r) => r.ingredientId === i.id));
+
+  function addRow() {
+    if (!toAdd) return;
+    setRows((prev) => [...prev, { ingredientId: toAdd, quantity: '100', unit: 'g' }]);
+    setToAdd('');
+  }
+  function removeRow(id: string) {
+    setRows((prev) => prev.filter((r) => r.ingredientId !== id));
+  }
+  function updateRow(id: string, patch: Partial<IngredientRow>) {
+    setRows((prev) => prev.map((r) => (r.ingredientId === id ? { ...r, ...patch } : r)));
+  }
+
+  const mealIngredientsJson = JSON.stringify(
+    rows.map((r) => ({ ingredientId: r.ingredientId, quantity: Number(r.quantity) || 0, unit: r.unit })),
+  );
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -47,6 +91,7 @@ export default function MealForm({ meal, action, submitLabel }: MealFormProps) {
       {meal && <input type="hidden" name="id" value={meal.id} />}
       {meal?.updatedAt && <input type="hidden" name="updatedAt" value={meal.updatedAt} />}
       <input type="hidden" name="imageUrl" value={imageUrl} />
+      <input type="hidden" name="mealIngredientsJson" value={mealIngredientsJson} />
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
@@ -163,6 +208,80 @@ export default function MealForm({ meal, action, submitLabel }: MealFormProps) {
       </div>
 
       <div>
+        <label className={labelClass}>Ingredients</label>
+        {allIngredients.length === 0 ? (
+          <p className="text-sm text-neutral-400">
+            No ingredients in the catalog yet. Add some under Admin → Ingredients first.
+          </p>
+        ) : (
+          <>
+            <p className="mb-2 text-xs text-neutral-400">
+              Attached ingredients drive this meal&apos;s nutrition and its derived allergen/diet
+              info (unless overridden above).
+            </p>
+            <div className="space-y-2">
+              {rows.map((r) => (
+                <div key={r.ingredientId} className="flex items-center gap-2">
+                  <span className="flex-1 truncate text-sm text-neutral-700">
+                    {ingredientName.get(r.ingredientId) ?? r.ingredientId}
+                  </span>
+                  <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={r.quantity}
+                    onChange={(e) => updateRow(r.ingredientId, { quantity: e.target.value })}
+                    className="w-24 rounded-lg border border-neutral-300 px-2 py-1 text-sm focus:border-purple-500 focus:outline-none"
+                  />
+                  <select
+                    value={r.unit}
+                    onChange={(e) => updateRow(r.ingredientId, { unit: e.target.value })}
+                    className="rounded-lg border border-neutral-300 px-2 py-1 text-sm focus:border-purple-500 focus:outline-none"
+                  >
+                    {UNIT_OPTIONS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => removeRow(r.ingredientId)}
+                    className="rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              {rows.length === 0 && <p className="text-sm text-neutral-400">No ingredients attached.</p>}
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <select
+                value={toAdd}
+                onChange={(e) => setToAdd(e.target.value)}
+                className="flex-1 rounded-lg border border-neutral-300 px-2 py-1 text-sm focus:border-purple-500 focus:outline-none"
+              >
+                <option value="">Add an ingredient…</option>
+                {available.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={addRow}
+                disabled={!toAdd}
+                className="rounded-lg bg-neutral-800 px-3 py-1.5 text-sm font-semibold text-white hover:bg-neutral-700 disabled:bg-neutral-300"
+              >
+                Add
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div>
         <label className={labelClass}>Image</label>
         {imageUrl && (
           <Image src={imageUrl} alt="Meal" width={128} height={128} className="mb-2 rounded-lg object-cover" />
@@ -171,12 +290,14 @@ export default function MealForm({ meal, action, submitLabel }: MealFormProps) {
         {uploading && <p className="text-xs text-purple-500">Uploading...</p>}
       </div>
 
-      <div>
-        <label className={labelClass}>Status</label>
-        <select name="status" defaultValue={meal?.status || 'draft'} className={inputClass}>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-      </div>
+      {!hideStatus && (
+        <div>
+          <label className={labelClass}>Status</label>
+          <select name="status" defaultValue={meal?.status || 'draft'} className={inputClass}>
+            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      )}
 
       <button
         type="submit"

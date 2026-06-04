@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { DailyPlan, Meal, MealSlotId, SLOT_LABELS, SLOT_SUBTITLES, SLOT_ORDER } from '@/lib/types';
 import { getDailyPlan, selectMeal, skipMeal } from '@/lib/store';
 import { getDietPrefs } from '@/lib/dietStore';
@@ -9,8 +10,10 @@ import { DietPreferences } from '@/lib/diet';
 import { getRecommendations } from '@/lib/recommendations';
 import { RecommendationConfig } from '@/lib/recommendationConfig';
 import { selectMealForDay, skipMealForDay } from '@/app/plan/actions';
+import { toggleFavoriteAction } from '@/app/favorites/actions';
 import StepProgress from '@/components/StepProgress';
 import MealOptionCard from '@/components/MealOptionCard';
+import RegisterPrompt from '@/components/RegisterPrompt';
 
 interface SelectClientProps {
   slot: MealSlotId;
@@ -22,6 +25,7 @@ interface SelectClientProps {
   recentMealIds: string[];
   pinnedMealId: string | null;
   dietPreferences: DietPreferences | null;
+  favoriteIds: string[];
 }
 
 export default function SelectClient({
@@ -34,10 +38,14 @@ export default function SelectClient({
   recentMealIds,
   pinnedMealId,
   dietPreferences,
+  favoriteIds,
 }: SelectClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [, startFavTransition] = useTransition();
   const [busyMealId, setBusyMealId] = useState<string | null>(null);
+  const [showRegister, setShowRegister] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(() => new Set(favoriteIds));
 
   const stepIndex = SLOT_ORDER.indexOf(slot) + 1;
   const label = SLOT_LABELS[slot] || slot;
@@ -82,6 +90,23 @@ export default function SelectClient({
       selectMeal(slot, meal.id);
       router.push('/');
     }
+  }
+
+  function handleToggleFavorite(meal: Meal) {
+    if (!isAuthenticated) {
+      setShowRegister(true);
+      return;
+    }
+    const willFavorite = !favorites.has(meal.id);
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (willFavorite) next.add(meal.id);
+      else next.delete(meal.id);
+      return next;
+    });
+    startFavTransition(async () => {
+      await toggleFavoriteAction(meal.id, willFavorite);
+    });
   }
 
   function handleSkip() {
@@ -137,6 +162,8 @@ export default function SelectClient({
               isCurrent={meal.id === currentMealId}
               pending={isPending && busyMealId === meal.id}
               onChoose={handleChoose}
+              isFavorite={favorites.has(meal.id)}
+              onToggleFavorite={handleToggleFavorite}
             />
           ))}
           {recommended.length === 0 && (
@@ -147,8 +174,28 @@ export default function SelectClient({
           )}
         </div>
 
+        {/* Make your own meal */}
+        <div className="mt-6 text-center">
+          {isAuthenticated ? (
+            <Link
+              href="/meals/new"
+              className="text-sm font-medium text-purple-500 transition-colors hover:text-purple-700"
+            >
+              ＋ Make your own meal
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowRegister(true)}
+              className="text-sm font-medium text-purple-500 transition-colors hover:text-purple-700"
+            >
+              ＋ Make your own meal
+            </button>
+          )}
+        </div>
+
         {/* Skip */}
-        <div className="mt-8">
+        <div className="mt-6">
           <button
             onClick={handleSkip}
             disabled={isPending}
@@ -158,6 +205,13 @@ export default function SelectClient({
           </button>
         </div>
       </div>
+
+      <RegisterPrompt
+        open={showRegister}
+        onClose={() => setShowRegister(false)}
+        title="Make your own meal"
+        message="Register for free to create your own private meals and have them appear when you plan."
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Meal } from '@/lib/types';
 import Tag from './Tag';
 
@@ -10,9 +11,19 @@ interface MealOptionCardProps {
   isCurrent?: boolean;
   pending?: boolean;
   onChoose: (meal: Meal) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (meal: Meal) => void;
 }
 
-export default function MealOptionCard({ meal, isPinned, isCurrent, pending, onChoose }: MealOptionCardProps) {
+export default function MealOptionCard({
+  meal,
+  isPinned,
+  isCurrent,
+  pending,
+  onChoose,
+  isFavorite,
+  onToggleFavorite,
+}: MealOptionCardProps) {
   return (
     <div
       className={`w-full overflow-hidden rounded-2xl bg-white shadow-sm transition-all ${
@@ -35,6 +46,21 @@ export default function MealOptionCard({ meal, isPinned, isCurrent, pending, onC
             Current choice
           </span>
         )}
+        {onToggleFavorite && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(meal);
+            }}
+            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+            className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg leading-none shadow-sm"
+          >
+            <span className={isFavorite ? 'text-berry-500' : 'text-neutral-400'}>
+              {isFavorite ? '♥' : '♡'}
+            </span>
+          </button>
+        )}
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
@@ -46,6 +72,12 @@ export default function MealOptionCard({ meal, isPinned, isCurrent, pending, onC
           </div>
         </div>
         <p className="mt-2 text-sm leading-relaxed text-neutral-500">{meal.description}</p>
+        <Link
+          href={`/meal/${meal.id}`}
+          className="mt-2 inline-block text-xs font-medium text-purple-500 hover:text-purple-700"
+        >
+          View ingredients &amp; nutrition →
+        </Link>
         <button
           onClick={() => onChoose(meal)}
           disabled={pending}

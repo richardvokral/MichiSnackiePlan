@@ -7,6 +7,7 @@ import {
   createMeal,
   updateMeal,
   setMealStatus,
+  setMealIngredients,
   updateRecommendationConfig,
   addAdmin,
   removeAdmin,
@@ -27,6 +28,24 @@ function formDataToObject(formData: FormData): Record<string, string> {
 function parseArrayField(value: string | undefined): string[] {
   if (!value) return [];
   return value.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+const mealIngredientsSchema = z.array(
+  z.object({
+    ingredientId: z.string().min(1),
+    quantity: z.number().nonnegative(),
+    unit: z.string().min(1).max(20),
+  }),
+);
+
+function parseMealIngredients(json: string | undefined): { ingredientId: string; quantity: number; unit: string }[] {
+  if (!json) return [];
+  try {
+    const result = mealIngredientsSchema.safeParse(JSON.parse(json));
+    return result.success ? result.data : [];
+  } catch {
+    return [];
+  }
 }
 
 export async function createMealAction(formData: FormData) {
@@ -52,8 +71,10 @@ export async function createMealAction(formData: FormData) {
     allergensOverride: raw.allergensOverride === 'on',
   });
 
-  await createMeal(input);
+  const created = await createMeal(input);
+  await setMealIngredients(created.id, parseMealIngredients(raw.mealIngredientsJson));
   revalidatePath('/admin/meals');
+  revalidatePath('/');
   redirect('/admin/meals');
 }
 
@@ -84,6 +105,7 @@ export async function updateMealAction(formData: FormData) {
   });
 
   await updateMeal(id, input, expectedUpdatedAt || undefined);
+  await setMealIngredients(id, parseMealIngredients(raw.mealIngredientsJson));
   revalidatePath('/admin/meals');
   revalidatePath(`/admin/meals/${id}`);
   revalidatePath('/');

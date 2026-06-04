@@ -1,4 +1,4 @@
-import { getMealWithMeta } from '@/lib/repository';
+import { getMealWithMeta, listIngredients, getMealIngredients } from '@/lib/repository';
 import { notFound } from 'next/navigation';
 import MealForm from '@/app/admin/meals/MealForm';
 import { updateMealAction } from '@/app/admin/actions';
@@ -9,7 +9,11 @@ export default async function EditMealPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const meal = await getMealWithMeta(id);
+  const [meal, allIngredients, mealIngredients] = await Promise.all([
+    getMealWithMeta(id),
+    listIngredients(),
+    getMealIngredients(id),
+  ]);
   if (!meal) notFound();
 
   return (
@@ -20,6 +24,8 @@ export default async function EditMealPage({
           meal={meal}
           action={updateMealAction}
           submitLabel="Save Changes"
+          allIngredients={allIngredients}
+          initialMealIngredients={mealIngredients}
         />
       </div>
     </div>

@@ -96,6 +96,25 @@ export function effectiveDietType(meal: MealDietShape): DietType | null {
   return null;
 }
 
+// Containment order — vegan is the least permissive classification, omnivore the most.
+const DIET_STRICTNESS: Record<DietType, number> = {
+  vegan: 0,
+  vegetarian: 1,
+  pescetarian: 2,
+  omnivore: 3,
+};
+
+// The strictest (least permissive) classification across a set — used to derive a
+// meal's diet from its ingredients: a dish is only as "vegan" as its least-vegan part.
+export function strictestDiet(types: (DietType | null | undefined)[]): DietType | null {
+  let result: DietType | null = null;
+  for (const t of types) {
+    if (!t) continue;
+    if (result === null || DIET_STRICTNESS[t] > DIET_STRICTNESS[result]) result = t;
+  }
+  return result;
+}
+
 // True when a meal must be hidden for the given preferences (hard filter). Allergy
 // conflicts hide on any known allergen overlap; diet conflicts hide when the meal's
 // effective classification is not accepted by the eater's diet.

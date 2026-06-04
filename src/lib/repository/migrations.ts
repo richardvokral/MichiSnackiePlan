@@ -95,6 +95,53 @@ const MIGRATIONS: Migration[] = [
       )`,
     ],
   },
+  {
+    version: '004_ingredients',
+    statements: [
+      `CREATE TABLE IF NOT EXISTS ingredients (
+        id          text PRIMARY KEY,
+        name        text NOT NULL,
+        calories    numeric,
+        protein_g   numeric,
+        carbs_g     numeric,
+        fat_g       numeric,
+        allergens   text[] NOT NULL DEFAULT '{}',
+        diet_type   text,
+        usda_fdc_id text,
+        created_at  timestamptz NOT NULL DEFAULT now(),
+        updated_at  timestamptz NOT NULL DEFAULT now()
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name)`,
+      `CREATE TABLE IF NOT EXISTS meal_ingredients (
+        meal_id       text NOT NULL REFERENCES meals(id) ON DELETE CASCADE,
+        ingredient_id text NOT NULL REFERENCES ingredients(id) ON DELETE RESTRICT,
+        quantity      numeric NOT NULL DEFAULT 0,
+        unit          text NOT NULL DEFAULT 'g',
+        sort_order    integer NOT NULL DEFAULT 0,
+        PRIMARY KEY (meal_id, ingredient_id)
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_meal_ingredients_meal ON meal_ingredients(meal_id)`,
+    ],
+  },
+  {
+    version: '005_user_meals',
+    statements: [
+      `ALTER TABLE meals ADD COLUMN IF NOT EXISTS owner_user_id text`,
+      `CREATE INDEX IF NOT EXISTS idx_meals_owner ON meals(owner_user_id)`,
+    ],
+  },
+  {
+    version: '006_favorites',
+    statements: [
+      `CREATE TABLE IF NOT EXISTS user_favorites (
+        user_id    text NOT NULL,
+        meal_id    text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, meal_id)
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id)`,
+    ],
+  },
 ];
 
 // Post-run health probes. Each returns a single row with an `ok` boolean so we can
@@ -105,12 +152,16 @@ const VERIFY_CHECKS: { label: string; sql: string }[] = [
   { label: 'meals.diet_type column', sql: columnExists('meals', 'diet_type') },
   { label: 'meals.allergens column', sql: columnExists('meals', 'allergens') },
   { label: 'meals.allergens_override column', sql: columnExists('meals', 'allergens_override') },
+  { label: 'meals.owner_user_id column', sql: columnExists('meals', 'owner_user_id') },
   { label: 'recommendation_config table', sql: `SELECT (to_regclass('public.recommendation_config') IS NOT NULL) AS ok` },
   { label: 'admins table', sql: `SELECT (to_regclass('public.admins') IS NOT NULL) AS ok` },
   { label: 'schema_migrations table', sql: `SELECT (to_regclass('public.schema_migrations') IS NOT NULL) AS ok` },
   { label: 'user_daily_plans table', sql: `SELECT (to_regclass('public.user_daily_plans') IS NOT NULL) AS ok` },
   { label: 'user_meal_preferences table', sql: `SELECT (to_regclass('public.user_meal_preferences') IS NOT NULL) AS ok` },
   { label: 'user_diet_preferences table', sql: `SELECT (to_regclass('public.user_diet_preferences') IS NOT NULL) AS ok` },
+  { label: 'ingredients table', sql: `SELECT (to_regclass('public.ingredients') IS NOT NULL) AS ok` },
+  { label: 'meal_ingredients table', sql: `SELECT (to_regclass('public.meal_ingredients') IS NOT NULL) AS ok` },
+  { label: 'user_favorites table', sql: `SELECT (to_regclass('public.user_favorites') IS NOT NULL) AS ok` },
 ];
 
 function columnExists(table: string, column: string): string {
