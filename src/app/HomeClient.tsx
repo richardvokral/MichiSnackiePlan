@@ -16,9 +16,11 @@ const emptySubscribe = () => () => {};
 const getServerSnapshot = () => null;
 
 function addDays(dateStr: string, delta: number): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + delta);
-  return d.toISOString().slice(0, 10);
+  // Work in UTC so day math doesn't drift across local timezones.
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + delta);
+  return date.toISOString().slice(0, 10);
 }
 
 function formatDay(dateStr: string, isToday: boolean): string {
@@ -26,7 +28,7 @@ function formatDay(dateStr: string, isToday: boolean): string {
   const today = new Date().toISOString().slice(0, 10);
   if (dateStr === addDays(today, -1)) return 'Yesterday';
   if (dateStr === addDays(today, 1)) return 'Tomorrow';
-  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
+  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -36,6 +38,7 @@ function formatDay(dateStr: string, isToday: boolean): string {
 interface HomeClientProps {
   mealMap: Record<string, Meal>;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   userEmail: string | null;
   initialPlan: DailyPlan | null;
   date: string;
@@ -45,6 +48,7 @@ interface HomeClientProps {
 export default function HomeClient({
   mealMap,
   isAuthenticated,
+  isAdmin,
   userEmail,
   initialPlan,
   date,
@@ -77,6 +81,11 @@ export default function HomeClient({
             <>
               <span className="truncate text-neutral-500">{userEmail ?? 'Signed in'}</span>
               <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <Link href="/admin" className="rounded-full bg-purple-600 px-3 py-1 font-semibold text-white hover:bg-purple-700">
+                    Admin
+                  </Link>
+                )}
                 <Link href="/preferences" className="font-medium text-purple-600 hover:text-purple-700">
                   Preferences
                 </Link>
@@ -95,7 +104,7 @@ export default function HomeClient({
           )}
         </div>
 
-        <GreetingHeader />
+        <GreetingHeader date={isAuthenticated ? date : undefined} isAuthenticated={isAuthenticated} />
 
         {/* Day navigation (signed-in, multi-day) */}
         {isAuthenticated && (

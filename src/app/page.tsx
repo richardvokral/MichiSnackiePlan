@@ -1,4 +1,4 @@
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAdmin } from '@/lib/auth';
 import { getPublishedMeals, getUserPlan } from '@/lib/repository';
 import { DailyPlan, Meal } from '@/lib/types';
 import HomeClient from './HomeClient';
@@ -24,14 +24,19 @@ export default async function Home({
   const selectedDate = user && date ? date : today;
 
   let initialPlan: DailyPlan | null = null;
+  let userIsAdmin = false;
   if (user) {
-    initialPlan = await getUserPlan(user.id, selectedDate);
+    [initialPlan, userIsAdmin] = await Promise.all([
+      getUserPlan(user.id, selectedDate),
+      isAdmin(user.email),
+    ]);
   }
 
   return (
     <HomeClient
       mealMap={mealMap}
       isAuthenticated={Boolean(user)}
+      isAdmin={userIsAdmin}
       userEmail={user?.email ?? null}
       initialPlan={initialPlan}
       date={selectedDate}
