@@ -47,6 +47,9 @@ export async function createMealAction(formData: FormData) {
     emoji: raw.emoji || '',
     imageUrl: raw.imageUrl || null,
     status: (raw.status as MealCatalogStatus) || 'draft',
+    dietType: raw.dietType || null,
+    allergens: parseArrayField(raw.allergens),
+    allergensOverride: raw.allergensOverride === 'on',
   });
 
   await createMeal(input);
@@ -75,6 +78,9 @@ export async function updateMealAction(formData: FormData) {
     emoji: raw.emoji || '',
     imageUrl: raw.imageUrl || null,
     status: raw.status || 'draft',
+    dietType: raw.dietType || null,
+    allergens: parseArrayField(raw.allergens),
+    allergensOverride: raw.allergensOverride === 'on',
   });
 
   await updateMeal(id, input, expectedUpdatedAt || undefined);

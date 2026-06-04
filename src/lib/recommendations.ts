@@ -3,12 +3,15 @@ import {
   RecommendationConfig,
   DEFAULT_RECOMMENDATION_CONFIG,
 } from './recommendationConfig';
+import { DietPreferences, mealConflictsWithPrefs } from './diet';
 
 export interface RecommendationContext {
   // Meal ids selected on recent previous days (for cross-day variety).
   recentMealIds?: string[];
   // The user's pinned recurring meal for this slot (e.g. oatmeal every breakfast).
   pinnedMealId?: string | null;
+  // The user's allergies/diet — conflicting meals are hidden entirely.
+  dietPreferences?: DietPreferences | null;
 }
 
 export function getRecommendations(
@@ -40,6 +43,12 @@ export function getRecommendations(
   }
 
   let candidates = allMeals.filter((m) => m.mealSlotAllowed.includes(slot));
+
+  // Hard dietary filter: drop any meal that conflicts with the user's allergies or
+  // diet before scoring, so conflicting meals never surface (even a pinned one).
+  if (context.dietPreferences) {
+    candidates = candidates.filter((m) => !mealConflictsWithPrefs(m, context.dietPreferences));
+  }
 
   candidates = candidates.filter((meal) => {
     if (config.rules.noExactRepeat && selectedMealIds.includes(meal.id)) return false;

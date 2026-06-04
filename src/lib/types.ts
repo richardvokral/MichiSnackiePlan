@@ -1,3 +1,5 @@
+import type { DietType } from './diet';
+
 export type MealSlotId = 'breakfast' | 'snack_am' | 'lunch' | 'snack_pm' | 'dinner';
 
 export type SlotStatus = 'completed' | 'active' | 'planned' | 'skipped';
@@ -25,6 +27,11 @@ export interface Meal {
   emoji: string;
   imageUrl: string | null;
   status: MealCatalogStatus;
+  // Dietary metadata (Phase: dietary preferences). Optional so legacy literal
+  // constructions still typecheck; DB-sourced meals always populate them.
+  dietType?: DietType | null; // explicit classification override; derived from proteinGroup when null
+  allergens?: string[]; // manual allergen tags (effective allergens may be derived from ingredients later)
+  allergensOverride?: boolean; // when true, `allergens` is authoritative over any derived set
 }
 
 export interface SlotState {

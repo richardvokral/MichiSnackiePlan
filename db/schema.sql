@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS meals (
   emoji           text NOT NULL DEFAULT '',
   image_url       text,
   status          text NOT NULL DEFAULT 'draft',
+  diet_type       text,
+  allergens       text[] NOT NULL DEFAULT '{}',
+  allergens_override boolean NOT NULL DEFAULT false,
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now()
 );
@@ -58,4 +61,11 @@ CREATE TABLE IF NOT EXISTS user_meal_preferences (
   PRIMARY KEY (user_id, slot)
 );
 
-INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data') ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS user_diet_preferences (
+  user_id    text PRIMARY KEY,
+  diet_type  text,
+  allergies  text[] NOT NULL DEFAULT '{}',
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet') ON CONFLICT DO NOTHING;

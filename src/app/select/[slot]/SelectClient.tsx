@@ -4,6 +4,8 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { DailyPlan, Meal, MealSlotId, SLOT_LABELS, SLOT_SUBTITLES, SLOT_ORDER } from '@/lib/types';
 import { getDailyPlan, selectMeal, skipMeal } from '@/lib/store';
+import { getDietPrefs } from '@/lib/dietStore';
+import { DietPreferences } from '@/lib/diet';
 import { getRecommendations } from '@/lib/recommendations';
 import { RecommendationConfig } from '@/lib/recommendationConfig';
 import { selectMealForDay, skipMealForDay } from '@/app/plan/actions';
@@ -19,6 +21,7 @@ interface SelectClientProps {
   initialPlan: DailyPlan | null;
   recentMealIds: string[];
   pinnedMealId: string | null;
+  dietPreferences: DietPreferences | null;
 }
 
 export default function SelectClient({
@@ -30,6 +33,7 @@ export default function SelectClient({
   initialPlan,
   recentMealIds,
   pinnedMealId,
+  dietPreferences,
 }: SelectClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -50,13 +54,22 @@ export default function SelectClient({
 
   const currentMealId = plan?.slots.find((s) => s.slot === slot)?.selectedMealId ?? null;
 
+  // Signed-in: prefs come from the server prop. Anonymous: read this device's
+  // localStorage copy (resolved on the client, like the plan above).
+  const effectiveDietPrefs = useMemo<DietPreferences | null>(() => {
+    if (isAuthenticated) return dietPreferences;
+    if (typeof window === 'undefined') return null;
+    return getDietPrefs();
+  }, [isAuthenticated, dietPreferences]);
+
   const recommended = useMemo(() => {
     if (!plan) return [];
     return getRecommendations(slot, plan, meals, config, {
       recentMealIds,
       pinnedMealId,
+      dietPreferences: effectiveDietPrefs,
     });
-  }, [plan, slot, meals, config, recentMealIds, pinnedMealId]);
+  }, [plan, slot, meals, config, recentMealIds, pinnedMealId, effectiveDietPrefs]);
 
   function handleChoose(meal: Meal) {
     setBusyMealId(meal.id);

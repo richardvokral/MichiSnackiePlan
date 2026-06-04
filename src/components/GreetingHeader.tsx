@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
+import RegisterPrompt from './RegisterPrompt';
 
 const emptySubscribe = () => () => {};
 function getGreetingClient() {
@@ -22,6 +23,7 @@ interface GreetingHeaderProps {
 export default function GreetingHeader({ date, isAuthenticated }: GreetingHeaderProps) {
   const greeting = useSyncExternalStore(emptySubscribe, getGreetingClient, getGreetingServer);
   const router = useRouter();
+  const [showRegister, setShowRegister] = useState(false);
   const showPicker = isAuthenticated && date;
 
   return (
@@ -51,6 +53,14 @@ export default function GreetingHeader({ date, isAuthenticated }: GreetingHeader
               className="absolute inset-0 cursor-pointer opacity-0"
             />
           )}
+          {!isAuthenticated && (
+            <button
+              type="button"
+              aria-label="Jump to a date"
+              onClick={() => setShowRegister(true)}
+              className="absolute inset-0 cursor-pointer"
+            />
+          )}
         </div>
       </div>
       <div className="mt-6">
@@ -59,6 +69,12 @@ export default function GreetingHeader({ date, isAuthenticated }: GreetingHeader
         </h1>
         <p className="mt-1 text-sm text-neutral-500">Ready for your daily journey?</p>
       </div>
+      <RegisterPrompt
+        open={showRegister}
+        onClose={() => setShowRegister(false)}
+        title="Plan any day for free"
+        message="Register for free to pick other days and keep your plans across devices."
+      />
     </div>
   );
 }

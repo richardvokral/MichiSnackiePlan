@@ -1,6 +1,7 @@
 import 'server-only';
 import { getDb } from '@/lib/db/client';
 import { Meal, MealCatalogStatus } from '@/lib/types';
+import { DietType, DIET_TYPES } from '@/lib/diet';
 import { z } from 'zod/v4';
 
 const mealSlotSchema = z.enum(['breakfast', 'snack_am', 'lunch', 'snack_pm', 'dinner']);
@@ -8,6 +9,7 @@ const proteinGroupSchema = z.enum(['dairy', 'eggs', 'meat', 'fish', 'plant', 'nu
 const mealStyleSchema = z.enum(['sweet', 'savory', 'bowl', 'sandwich', 'salad', 'light', 'main_meal']);
 const fruitOrVegSchema = z.enum(['fruit', 'veg', 'both', 'none']);
 const catalogStatusSchema = z.enum(['draft', 'published', 'inactive']);
+const dietTypeSchema = z.enum(DIET_TYPES);
 
 export const mealInputSchema = z.object({
   id: z.string().min(1).optional(),
@@ -24,6 +26,9 @@ export const mealInputSchema = z.object({
   emoji: z.string().max(10).default(''),
   imageUrl: z.string().url().nullable().default(null),
   status: catalogStatusSchema.default('draft'),
+  dietType: dietTypeSchema.nullable().default(null),
+  allergens: z.array(z.string().max(50)).default([]),
+  allergensOverride: z.boolean().default(false),
 });
 
 export type MealInput = z.infer<typeof mealInputSchema>;
@@ -43,6 +48,9 @@ interface MealRow {
   emoji: string;
   image_url: string | null;
   status: string;
+  diet_type: string | null;
+  allergens: string[] | null;
+  allergens_override: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +71,9 @@ function rowToMeal(row: MealRow): Meal {
     emoji: row.emoji,
     imageUrl: row.image_url,
     status: row.status as Meal['status'],
+    dietType: (row.diet_type as DietType | null) ?? null,
+    allergens: row.allergens ?? [],
+    allergensOverride: row.allergens_override ?? false,
   };
 }
 
@@ -105,8 +116,8 @@ export async function createMeal(input: MealInput): Promise<Meal> {
   const sql = getDb();
   const id = data.id || `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const rows = await sql`
-    INSERT INTO meals (id, name, description, meal_slot_allowed, category, main_protein, protein_group, carb_base, meal_style, fruit_or_veg, tags, emoji, image_url, status)
-    VALUES (${id}, ${data.name}, ${data.description}, ${data.mealSlotAllowed}, ${data.category}, ${data.mainProtein}, ${data.proteinGroup}, ${data.carbBase}, ${data.mealStyle}, ${data.fruitOrVeg}, ${data.tags}, ${data.emoji}, ${data.imageUrl}, ${data.status})
+    INSERT INTO meals (id, name, description, meal_slot_allowed, category, main_protein, protein_group, carb_base, meal_style, fruit_or_veg, tags, emoji, image_url, status, diet_type, allergens, allergens_override)
+    VALUES (${id}, ${data.name}, ${data.description}, ${data.mealSlotAllowed}, ${data.category}, ${data.mainProtein}, ${data.proteinGroup}, ${data.carbBase}, ${data.mealStyle}, ${data.fruitOrVeg}, ${data.tags}, ${data.emoji}, ${data.imageUrl}, ${data.status}, ${data.dietType}, ${data.allergens}, ${data.allergensOverride})
     RETURNING *
   `;
   return rowToMeal(rows[0] as MealRow);
@@ -145,6 +156,10 @@ export async function updateMeal(
     emoji: input.emoji ?? current.emoji,
     image_url: input.imageUrl !== undefined ? input.imageUrl : current.image_url,
     status: input.status ?? current.status,
+    diet_type: input.dietType !== undefined ? input.dietType : current.diet_type,
+    allergens: input.allergens ?? current.allergens ?? [],
+    allergens_override:
+      input.allergensOverride !== undefined ? input.allergensOverride : (current.allergens_override ?? false),
   };
 
   const rows = await sql`
@@ -162,6 +177,9 @@ export async function updateMeal(
       emoji = ${merged.emoji},
       image_url = ${merged.image_url},
       status = ${merged.status},
+      diet_type = ${merged.diet_type},
+      allergens = ${merged.allergens},
+      allergens_override = ${merged.allergens_override},
       updated_at = now()
     WHERE id = ${id}
     RETURNING *

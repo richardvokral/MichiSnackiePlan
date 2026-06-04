@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
 import { DailyPlan, Meal } from '@/lib/types';
 import { getDailyPlanSnapshot, getCompletedCount, getActiveSlot } from '@/lib/store';
+import { getDietPrefsSnapshot } from '@/lib/dietStore';
 import { getTodaysIntention } from '@/data/intentions';
 import GreetingHeader from '@/components/GreetingHeader';
 import IntentionCard from '@/components/IntentionCard';
@@ -43,6 +44,7 @@ interface HomeClientProps {
   initialPlan: DailyPlan | null;
   date: string;
   isToday: boolean;
+  hasDietPrefs: boolean;
 }
 
 export default function HomeClient({
@@ -53,11 +55,19 @@ export default function HomeClient({
   initialPlan,
   date,
   isToday,
+  hasDietPrefs,
 }: HomeClientProps) {
   // Anonymous users keep a today-only plan in localStorage; authenticated users
   // get their persisted plan for the selected day from the server.
   const localPlan = useSyncExternalStore(emptySubscribe, getDailyPlanSnapshot, getServerSnapshot);
   const plan = isAuthenticated ? initialPlan : localPlan;
+
+  // Diet prefs: server-provided for signed-in users; for anonymous users, read
+  // this device's localStorage copy so the CTA reflects what they've set.
+  const localDietPrefs = useSyncExternalStore(emptySubscribe, getDietPrefsSnapshot, getServerSnapshot);
+  const hasPrefs = isAuthenticated
+    ? hasDietPrefs
+    : Boolean(localDietPrefs && (localDietPrefs.dietType || localDietPrefs.allergies.length > 0));
 
   if (!plan) {
     return (
@@ -126,6 +136,18 @@ export default function HomeClient({
             </Link>
           </div>
         )}
+
+        {/* Food preferences CTA — one-liner to set allergies & diet */}
+        <Link
+          href="/preferences/diet"
+          className="mt-5 flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+        >
+          <span className="flex items-center gap-2">
+            <span>🥗</span>
+            {hasPrefs ? 'Edit your food preferences' : 'Set your food preferences'}
+          </span>
+          <span aria-hidden className="text-blue-400">›</span>
+        </Link>
 
         <div className="mt-6">
           <IntentionCard intention={intention} />

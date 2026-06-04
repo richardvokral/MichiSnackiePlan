@@ -34,3 +34,8 @@ export {
   removeUserPreference,
 } from './preferences';
 export type { MealPreferences } from './preferences';
+
+export {
+  getUserDietPreferences,
+  setUserDietPreferences,
+} from './dietPreferences';

@@ -1,5 +1,5 @@
 import { getCurrentUser, isAdmin } from '@/lib/auth';
-import { getPublishedMeals, getUserPlan } from '@/lib/repository';
+import { getPublishedMeals, getUserPlan, getUserDietPreferences } from '@/lib/repository';
 import { DailyPlan, Meal } from '@/lib/types';
 import HomeClient from './HomeClient';
 
@@ -25,11 +25,16 @@ export default async function Home({
 
   let initialPlan: DailyPlan | null = null;
   let userIsAdmin = false;
+  let hasDietPrefs = false;
   if (user) {
-    [initialPlan, userIsAdmin] = await Promise.all([
+    const [plan, admin, dietPrefs] = await Promise.all([
       getUserPlan(user.id, selectedDate),
       isAdmin(user.email),
+      getUserDietPreferences(user.id),
     ]);
+    initialPlan = plan;
+    userIsAdmin = admin;
+    hasDietPrefs = Boolean(dietPrefs && (dietPrefs.dietType || dietPrefs.allergies.length > 0));
   }
 
   return (
@@ -41,6 +46,7 @@ export default async function Home({
       initialPlan={initialPlan}
       date={selectedDate}
       isToday={selectedDate === today}
+      hasDietPrefs={hasDietPrefs}
     />
   );
 }

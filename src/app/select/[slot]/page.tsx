@@ -5,8 +5,10 @@ import {
   getUserPlan,
   getRecentSelectedMealIds,
   getUserPreferences,
+  getUserDietPreferences,
 } from '@/lib/repository';
 import { DailyPlan, MealSlotId } from '@/lib/types';
+import { DietPreferences } from '@/lib/diet';
 import SelectClient from './SelectClient';
 
 export const dynamic = 'force-dynamic';
@@ -35,14 +37,19 @@ export default async function SelectMealPage({
   let initialPlan: DailyPlan | null = null;
   let recentMealIds: string[] = [];
   let pinnedMealId: string | null = null;
+  let dietPreferences: DietPreferences | null = null;
 
   if (user) {
-    [initialPlan, recentMealIds] = await Promise.all([
+    const [plan, recent, prefs, diet] = await Promise.all([
       getUserPlan(user.id, selectedDate),
       getRecentSelectedMealIds(user.id, selectedDate, config.thresholds.crossDayLookbackDays),
+      getUserPreferences(user.id),
+      getUserDietPreferences(user.id),
     ]);
-    const prefs = await getUserPreferences(user.id);
+    initialPlan = plan;
+    recentMealIds = recent;
     pinnedMealId = prefs[slotId] ?? null;
+    dietPreferences = diet;
   }
 
   return (
@@ -55,6 +62,7 @@ export default async function SelectMealPage({
       initialPlan={initialPlan}
       recentMealIds={recentMealIds}
       pinnedMealId={pinnedMealId}
+      dietPreferences={dietPreferences}
     />
   );
 }

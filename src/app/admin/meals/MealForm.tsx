@@ -1,6 +1,7 @@
 'use client';
 
 import { Meal } from '@/lib/types';
+import { DIET_TYPES, ALLERGENS } from '@/lib/diet';
 import { useState } from 'react';
 import Image from 'next/image';
 
@@ -132,6 +133,35 @@ export default function MealForm({ meal, action, submitLabel }: MealFormProps) {
         <input name="tags" defaultValue={meal?.tags.join(', ')} className={inputClass} />
       </div>
 
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label className={labelClass}>Diet classification</label>
+          <select name="dietType" defaultValue={meal?.dietType ?? ''} className={inputClass}>
+            <option value="">Auto (from protein group)</option>
+            {DIET_TYPES.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <p className="mt-1 text-xs text-neutral-400">
+            Strictest diet this meal satisfies. Leave on Auto to derive from the protein group.
+          </p>
+        </div>
+        <div>
+          <label className={labelClass}>Allergens</label>
+          <div className="flex flex-wrap gap-2">
+            {ALLERGENS.map((a) => (
+              <label key={a} className="flex items-center gap-1 text-sm">
+                <input type="checkbox" name={`allergen_${a}`} defaultChecked={meal?.allergens?.includes(a)} />
+                {a}
+              </label>
+            ))}
+          </div>
+          <input type="hidden" name="allergens" id="allergens" />
+          <label className="mt-2 flex items-center gap-1 text-sm">
+            <input type="checkbox" name="allergensOverride" defaultChecked={meal?.allergensOverride} />
+            These allergens are authoritative
+          </label>
+        </div>
+      </div>
+
       <div>
         <label className={labelClass}>Image</label>
         {imageUrl && (
@@ -163,6 +193,11 @@ export default function MealForm({ meal, action, submitLabel }: MealFormProps) {
             return cb?.checked;
           });
           (form.querySelector('#mealStyle') as HTMLInputElement).value = styles.join(',');
+          const allergens = ALLERGENS.filter((a) => {
+            const cb = form.querySelector(`[name="allergen_${a}"]`) as HTMLInputElement;
+            return cb?.checked;
+          });
+          (form.querySelector('#allergens') as HTMLInputElement).value = allergens.join(',');
         }}
       >
         {submitLabel}
