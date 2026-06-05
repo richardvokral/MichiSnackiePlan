@@ -1,10 +1,12 @@
 import 'server-only';
 import { getDb } from '@/lib/db/client';
-import { Ingredient } from '@/lib/types';
+import { Ingredient, IngredientStatus } from '@/lib/types';
 import { DietType, DIET_TYPES } from '@/lib/diet';
 import { z } from 'zod/v4';
 
 const dietTypeSchema = z.enum(DIET_TYPES);
+const ingredientStatusSchema = z.enum(['draft', 'published', 'inactive']);
+const ingredientSourceSchema = z.enum(['manual', 'ai', 'usda']);
 
 export const ingredientInputSchema = z.object({
   id: z.string().min(1).optional(),
@@ -16,6 +18,8 @@ export const ingredientInputSchema = z.object({
   allergens: z.array(z.string().max(50)).default([]),
   dietType: dietTypeSchema.nullable().default(null),
   usdaFdcId: z.string().max(50).nullable().default(null),
+  status: ingredientStatusSchema.default('draft'),
+  source: ingredientSourceSchema.default('manual'),
 });
 
 export type IngredientInput = z.infer<typeof ingredientInputSchema>;
@@ -30,6 +34,8 @@ interface IngredientRow {
   allergens: string[] | null;
   diet_type: string | null;
   usda_fdc_id: string | null;
+  status: string | null;
+  source: string | null;
 }
 
 function num(value: string | null): number | null {
@@ -47,12 +53,27 @@ function rowToIngredient(row: IngredientRow): Ingredient {
     allergens: row.allergens ?? [],
     dietType: (row.diet_type as DietType | null) ?? null,
     usdaFdcId: row.usda_fdc_id,
+    status: (row.status as IngredientStatus | null) ?? 'published',
+    source: (row.source as Ingredient['source'] | null) ?? 'manual',
   };
 }
 
-export async function listIngredients(): Promise<Ingredient[]> {
+// Admin listing — optionally filtered by status. Shows every ingredient (incl. drafts)
+// so admins can review AI/USDA output. Meal builders use getPublishedIngredients().
+export async function listIngredients(statusFilter?: IngredientStatus): Promise<Ingredient[]> {
   const sql = getDb();
+  if (statusFilter) {
+    const rows = await sql`SELECT * FROM ingredients WHERE status = ${statusFilter} ORDER BY name`;
+    return (rows as IngredientRow[]).map(rowToIngredient);
+  }
   const rows = await sql`SELECT * FROM ingredients ORDER BY name`;
+  return (rows as IngredientRow[]).map(rowToIngredient);
+}
+
+// Only published ingredients are attachable to meals and count toward meal nutrition.
+export async function getPublishedIngredients(): Promise<Ingredient[]> {
+  const sql = getDb();
+  const rows = await sql`SELECT * FROM ingredients WHERE status = 'published' ORDER BY name`;
   return (rows as IngredientRow[]).map(rowToIngredient);
 }
 
@@ -63,16 +84,36 @@ export async function getIngredientById(id: string): Promise<Ingredient | null> 
   return rowToIngredient(rows[0] as IngredientRow);
 }
 
+// Case-insensitive name lookup — used by the AI pipeline to avoid duplicates.
+export async function getIngredientByName(name: string): Promise<Ingredient | null> {
+  const sql = getDb();
+  const rows = await sql`SELECT * FROM ingredients WHERE lower(name) = lower(${name}) LIMIT 1`;
+  if (rows.length === 0) return null;
+  return rowToIngredient(rows[0] as IngredientRow);
+}
+
+export async function getIngredientByUsdaId(fdcId: string): Promise<Ingredient | null> {
+  const sql = getDb();
+  const rows = await sql`SELECT * FROM ingredients WHERE usda_fdc_id = ${fdcId} LIMIT 1`;
+  if (rows.length === 0) return null;
+  return rowToIngredient(rows[0] as IngredientRow);
+}
+
 export async function createIngredient(input: IngredientInput): Promise<Ingredient> {
   const data = ingredientInputSchema.parse(input);
   const sql = getDb();
   const id = data.id || `ing_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const rows = await sql`
-    INSERT INTO ingredients (id, name, calories, protein_g, carbs_g, fat_g, allergens, diet_type, usda_fdc_id)
-    VALUES (${id}, ${data.name}, ${data.calories}, ${data.proteinG}, ${data.carbsG}, ${data.fatG}, ${data.allergens}, ${data.dietType}, ${data.usdaFdcId})
+    INSERT INTO ingredients (id, name, calories, protein_g, carbs_g, fat_g, allergens, diet_type, usda_fdc_id, status, source)
+    VALUES (${id}, ${data.name}, ${data.calories}, ${data.proteinG}, ${data.carbsG}, ${data.fatG}, ${data.allergens}, ${data.dietType}, ${data.usdaFdcId}, ${data.status}, ${data.source})
     RETURNING *
   `;
   return rowToIngredient(rows[0] as IngredientRow);
+}
+
+// Create an ingredient forced to 'draft' (AI/USDA pipeline). Caller sets source.
+export async function createIngredientDraft(input: Omit<IngredientInput, 'status'>): Promise<Ingredient> {
+  return createIngredient({ ...input, status: 'draft' });
 }
 
 export async function updateIngredient(id: string, input: IngredientInput): Promise<Ingredient> {
@@ -88,7 +129,20 @@ export async function updateIngredient(id: string, input: IngredientInput): Prom
       allergens = ${data.allergens},
       diet_type = ${data.dietType},
       usda_fdc_id = ${data.usdaFdcId},
+      status = ${data.status},
+      source = ${data.source},
       updated_at = now()
+    WHERE id = ${id}
+    RETURNING *
+  `;
+  if (rows.length === 0) throw new Error('Ingredient not found');
+  return rowToIngredient(rows[0] as IngredientRow);
+}
+
+export async function setIngredientStatus(id: string, status: IngredientStatus): Promise<Ingredient> {
+  const sql = getDb();
+  const rows = await sql`
+    UPDATE ingredients SET status = ${status}, updated_at = now()
     WHERE id = ${id}
     RETURNING *
   `;

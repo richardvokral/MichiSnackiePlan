@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS meals (
   allergens       text[] NOT NULL DEFAULT '{}',
   allergens_override boolean NOT NULL DEFAULT false,
   owner_user_id   text,
+  total_weight_g  numeric,
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now()
 );
@@ -82,11 +83,15 @@ CREATE TABLE IF NOT EXISTS ingredients (
   allergens   text[] NOT NULL DEFAULT '{}',
   diet_type   text,
   usda_fdc_id text,
+  status      text NOT NULL DEFAULT 'draft',
+  source      text NOT NULL DEFAULT 'manual',
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name);
+
+CREATE INDEX IF NOT EXISTS idx_ingredients_status ON ingredients(status);
 
 CREATE TABLE IF NOT EXISTS meal_ingredients (
   meal_id       text NOT NULL REFERENCES meals(id) ON DELETE CASCADE,
@@ -108,4 +113,42 @@ CREATE TABLE IF NOT EXISTS user_favorites (
 
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 
-INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet'), ('004_ingredients'), ('005_user_meals'), ('006_favorites'), ('007_energy_unit') ON CONFLICT DO NOTHING;
+CREATE TABLE IF NOT EXISTS ai_generation_jobs (
+  id              text PRIMARY KEY,
+  type            text NOT NULL,
+  status          text NOT NULL DEFAULT 'pending',
+  target_count    integer NOT NULL DEFAULT 0,
+  processed_count integer NOT NULL DEFAULT 0,
+  created_count   integer NOT NULL DEFAULT 0,
+  error_count     integer NOT NULL DEFAULT 0,
+  params          jsonb NOT NULL DEFAULT '{}',
+  last_error      text,
+  created_by      text,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_jobs_status ON ai_generation_jobs(status);
+
+CREATE TABLE IF NOT EXISTS ai_ingredient_candidates (
+  id            text PRIMARY KEY,
+  job_id        text NOT NULL REFERENCES ai_generation_jobs(id) ON DELETE CASCADE,
+  name          text NOT NULL,
+  allergens     text[] NOT NULL DEFAULT '{}',
+  diet_type     text,
+  status        text NOT NULL DEFAULT 'pending',
+  ingredient_id text,
+  error         text,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_candidates_job ON ai_ingredient_candidates(job_id, status);
+
+CREATE TABLE IF NOT EXISTS ai_config (
+  id              text PRIMARY KEY,
+  config          jsonb NOT NULL,
+  updated_at      timestamptz NOT NULL DEFAULT now(),
+  updated_by      text
+);
+
+INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet'), ('004_ingredients'), ('005_user_meals'), ('006_favorites'), ('007_energy_unit'), ('008_ai_and_status') ON CONFLICT DO NOTHING;

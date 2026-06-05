@@ -12,6 +12,11 @@ export type FruitOrVeg = 'fruit' | 'veg' | 'both' | 'none';
 
 export type MealCatalogStatus = 'draft' | 'published' | 'inactive';
 
+// Ingredients reuse the same status triad as meals, plus a provenance tag so admins
+// can tell hand-entered items from AI/USDA-generated ones.
+export type IngredientStatus = 'draft' | 'published' | 'inactive';
+export type IngredientSource = 'manual' | 'ai' | 'usda';
+
 export interface Meal {
   id: string;
   name: string;
@@ -33,6 +38,7 @@ export interface Meal {
   allergens?: string[]; // manual allergen tags (effective allergens may be derived from ingredients later)
   allergensOverride?: boolean; // when true, `allergens` is authoritative over any derived set
   ownerUserId?: string | null; // null = public catalog meal; set = private to that user
+  totalWeightG?: number | null; // total prepared weight; used to validate ingredient weights <= 100%
   // Hydrated only on the meal-detail path (not the bulk selection list):
   ingredients?: MealIngredient[];
   nutrition?: MealNutrition | null;
@@ -48,7 +54,9 @@ export interface Ingredient {
   fatG: number | null;
   allergens: string[];
   dietType: DietType | null;
-  usdaFdcId: string | null; // reserved for future USDA FoodData Central sync
+  usdaFdcId: string | null; // USDA FoodData Central id, set when loaded/enriched from USDA
+  status: IngredientStatus; // draft until reviewed; only published ingredients are selectable in meals
+  source: IngredientSource; // manual | ai | usda
 }
 
 // An ingredient attached to a meal with an amount. `ingredient` is hydrated when

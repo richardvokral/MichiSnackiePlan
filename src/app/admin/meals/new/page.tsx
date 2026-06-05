@@ -1,9 +1,9 @@
 import MealForm from '@/app/admin/meals/MealForm';
 import { createMealAction } from '@/app/admin/actions';
-import { listIngredients } from '@/lib/repository';
+import { getPublishedIngredients } from '@/lib/repository';
 
 export default async function NewMealPage() {
-  const allIngredients = await listIngredients();
+  const allIngredients = await getPublishedIngredients();
   return (
     <div>
       <h1 className="text-2xl font-bold text-neutral-800">Create New Meal</h1>

@@ -2,6 +2,7 @@
 
 import { Meal, Ingredient, MealIngredient } from '@/lib/types';
 import { DIET_TYPES, ALLERGENS } from '@/lib/diet';
+import { checkMealWeight } from '@/lib/mealValidation';
 import { useState } from 'react';
 import Image from 'next/image';
 
@@ -45,6 +46,9 @@ export default function MealForm({
     })),
   );
   const [toAdd, setToAdd] = useState('');
+  const [totalWeight, setTotalWeight] = useState(
+    meal?.totalWeightG != null ? String(meal.totalWeightG) : '',
+  );
 
   const ingredientName = new Map(allIngredients.map((i) => [i.id, i.name]));
   const available = allIngredients.filter((i) => !rows.some((r) => r.ingredientId === i.id));
@@ -63,6 +67,11 @@ export default function MealForm({
 
   const mealIngredientsJson = JSON.stringify(
     rows.map((r) => ({ ingredientId: r.ingredientId, quantity: Number(r.quantity) || 0, unit: r.unit })),
+  );
+
+  const weightCheck = checkMealWeight(
+    rows.map((r) => ({ quantity: Number(r.quantity) || 0, unit: r.unit })),
+    totalWeight === '' ? null : Number(totalWeight),
   );
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -278,6 +287,28 @@ export default function MealForm({
               </button>
             </div>
           </>
+        )}
+      </div>
+
+      <div>
+        <label className={labelClass}>Total weight (g, optional)</label>
+        <input
+          name="totalWeightG"
+          type="number"
+          step="any"
+          min="0"
+          value={totalWeight}
+          onChange={(e) => setTotalWeight(e.target.value)}
+          className="w-40 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+        />
+        <p className="mt-1 text-xs text-neutral-400">
+          Summable ingredients total {weightCheck.sumG}g
+          {weightCheck.indeterminate ? ' (excludes non-gram units)' : ''}.
+        </p>
+        {totalWeight !== '' && !weightCheck.ok && (
+          <p className="mt-1 text-xs text-red-500">
+            Ingredient weights ({weightCheck.sumG}g) exceed the total weight ({weightCheck.totalG}g).
+          </p>
         )}
       </div>
 

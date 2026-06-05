@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/auth';
-import { listIngredients } from '@/lib/repository';
+import { getPublishedIngredients } from '@/lib/repository';
 import MealForm from '@/app/admin/meals/MealForm';
 import { createUserMealAction } from '@/app/meals/actions';
 
@@ -11,7 +11,7 @@ export default async function NewUserMealPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/auth/sign-in');
 
-  const allIngredients = await listIngredients();
+  const allIngredients = await getPublishedIngredients();
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-12">

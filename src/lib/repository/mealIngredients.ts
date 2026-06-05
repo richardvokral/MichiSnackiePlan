@@ -1,6 +1,6 @@
 import 'server-only';
 import { getDb } from '@/lib/db/client';
-import { MealIngredient, Ingredient } from '@/lib/types';
+import { MealIngredient, Ingredient, IngredientStatus } from '@/lib/types';
 import { DietType } from '@/lib/diet';
 
 interface MealIngredientJoinRow {
@@ -16,6 +16,8 @@ interface MealIngredientJoinRow {
   i_allergens: string[] | null;
   i_diet_type: string | null;
   i_usda_fdc_id: string | null;
+  i_status: string | null;
+  i_source: string | null;
 }
 
 function num(value: string | null): number | null {
@@ -33,6 +35,8 @@ function rowToMealIngredient(row: MealIngredientJoinRow): MealIngredient {
     allergens: row.i_allergens ?? [],
     dietType: (row.i_diet_type as DietType | null) ?? null,
     usdaFdcId: row.i_usda_fdc_id,
+    status: (row.i_status as IngredientStatus | null) ?? 'published',
+    source: (row.i_source as Ingredient['source'] | null) ?? 'manual',
   };
   return {
     ingredientId: row.ingredient_id,
@@ -49,7 +53,8 @@ export async function getMealIngredients(mealId: string): Promise<MealIngredient
     SELECT mi.ingredient_id, mi.quantity, mi.unit, mi.sort_order,
            i.name AS i_name, i.calories AS i_calories, i.protein_g AS i_protein_g,
            i.carbs_g AS i_carbs_g, i.fat_g AS i_fat_g, i.allergens AS i_allergens,
-           i.diet_type AS i_diet_type, i.usda_fdc_id AS i_usda_fdc_id
+           i.diet_type AS i_diet_type, i.usda_fdc_id AS i_usda_fdc_id,
+           i.status AS i_status, i.source AS i_source
     FROM meal_ingredients mi
     JOIN ingredients i ON i.id = mi.ingredient_id
     WHERE mi.meal_id = ${mealId}

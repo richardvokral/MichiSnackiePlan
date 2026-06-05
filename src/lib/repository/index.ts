@@ -16,11 +16,17 @@ export {
 
 export {
   listIngredients,
+  getPublishedIngredients,
   getIngredientById,
+  getIngredientByName,
+  getIngredientByUsdaId,
   createIngredient,
+  createIngredientDraft,
   updateIngredient,
+  setIngredientStatus,
   deleteIngredient,
 } from './ingredients';
+export type { IngredientInput } from './ingredients';
 
 export {
   getMealIngredients,
@@ -38,6 +44,27 @@ export {
   getRecommendationConfig,
   updateRecommendationConfig,
 } from './config';
+
+export {
+  getAiConfig,
+  updateAiConfig,
+  DEFAULT_AI_SETTINGS,
+} from './aiConfig';
+
+export {
+  createAiJob,
+  getAiJob,
+  listAiJobs,
+  updateAiJobProgress,
+  addIngredientCandidates,
+  countPendingCandidates,
+  countAllPendingCandidates,
+  getPendingCandidates,
+  getAnyPendingCandidates,
+  getJobCandidateNames,
+  markCandidate,
+} from './aiJobs';
+export type { AiJob, AiJobType, AiJobStatus, IngredientCandidate } from './aiJobs';
 
 export {
   listAdmins,

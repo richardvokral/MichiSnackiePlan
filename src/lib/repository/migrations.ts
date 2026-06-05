@@ -148,6 +148,57 @@ const MIGRATIONS: Migration[] = [
       `ALTER TABLE user_diet_preferences ADD COLUMN IF NOT EXISTS energy_unit text`,
     ],
   },
+  {
+    version: '008_ai_and_status',
+    statements: [
+      // Ingredient status workflow (mirrors meals.status) + provenance.
+      `ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'draft'`,
+      `ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'manual'`,
+      `CREATE INDEX IF NOT EXISTS idx_ingredients_status ON ingredients(status)`,
+      // Backfill: pre-008 ingredients were created before the status gate, so keep
+      // them visible to meal builders. New rows insert as 'draft' after this runs.
+      // Safe because migrations run exactly once (guarded by schema_migrations).
+      `UPDATE ingredients SET status = 'published'`,
+      // Total weight enables the "ingredients <= 100% of weight" rule (foods AI gen).
+      `ALTER TABLE meals ADD COLUMN IF NOT EXISTS total_weight_g numeric`,
+      // DB-backed batch jobs (no job queue exists; processed one batch per request).
+      `CREATE TABLE IF NOT EXISTS ai_generation_jobs (
+        id              text PRIMARY KEY,
+        type            text NOT NULL,
+        status          text NOT NULL DEFAULT 'pending',
+        target_count    integer NOT NULL DEFAULT 0,
+        processed_count integer NOT NULL DEFAULT 0,
+        created_count   integer NOT NULL DEFAULT 0,
+        error_count     integer NOT NULL DEFAULT 0,
+        params          jsonb NOT NULL DEFAULT '{}',
+        last_error      text,
+        created_by      text,
+        created_at      timestamptz NOT NULL DEFAULT now(),
+        updated_at      timestamptz NOT NULL DEFAULT now()
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_ai_jobs_status ON ai_generation_jobs(status)`,
+      // Work queue of AI-proposed ingredient names awaiting USDA enrichment.
+      `CREATE TABLE IF NOT EXISTS ai_ingredient_candidates (
+        id            text PRIMARY KEY,
+        job_id        text NOT NULL REFERENCES ai_generation_jobs(id) ON DELETE CASCADE,
+        name          text NOT NULL,
+        allergens     text[] NOT NULL DEFAULT '{}',
+        diet_type     text,
+        status        text NOT NULL DEFAULT 'pending',
+        ingredient_id text,
+        error         text,
+        created_at    timestamptz NOT NULL DEFAULT now()
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_ai_candidates_job ON ai_ingredient_candidates(job_id, status)`,
+      // Admin-editable AI settings (single row id='default'), mirrors recommendation_config.
+      `CREATE TABLE IF NOT EXISTS ai_config (
+        id              text PRIMARY KEY,
+        config          jsonb NOT NULL,
+        updated_at      timestamptz NOT NULL DEFAULT now(),
+        updated_by      text
+      )`,
+    ],
+  },
 ];
 
 // Post-run health probes. Each returns a single row with an `ok` boolean so we can
@@ -167,8 +218,14 @@ const VERIFY_CHECKS: { label: string; sql: string }[] = [
   { label: 'user_diet_preferences table', sql: `SELECT (to_regclass('public.user_diet_preferences') IS NOT NULL) AS ok` },
   { label: 'user_diet_preferences.energy_unit column', sql: columnExists('user_diet_preferences', 'energy_unit') },
   { label: 'ingredients table', sql: `SELECT (to_regclass('public.ingredients') IS NOT NULL) AS ok` },
+  { label: 'ingredients.status column', sql: columnExists('ingredients', 'status') },
+  { label: 'ingredients.source column', sql: columnExists('ingredients', 'source') },
   { label: 'meal_ingredients table', sql: `SELECT (to_regclass('public.meal_ingredients') IS NOT NULL) AS ok` },
+  { label: 'meals.total_weight_g column', sql: columnExists('meals', 'total_weight_g') },
   { label: 'user_favorites table', sql: `SELECT (to_regclass('public.user_favorites') IS NOT NULL) AS ok` },
+  { label: 'ai_generation_jobs table', sql: `SELECT (to_regclass('public.ai_generation_jobs') IS NOT NULL) AS ok` },
+  { label: 'ai_ingredient_candidates table', sql: `SELECT (to_regclass('public.ai_ingredient_candidates') IS NOT NULL) AS ok` },
+  { label: 'ai_config table', sql: `SELECT (to_regclass('public.ai_config') IS NOT NULL) AS ok` },
 ];
 
 function columnExists(table: string, column: string): string {

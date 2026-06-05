@@ -69,6 +69,7 @@ export async function createMealAction(formData: FormData) {
     dietType: raw.dietType || null,
     allergens: parseArrayField(raw.allergens),
     allergensOverride: raw.allergensOverride === 'on',
+    totalWeightG: raw.totalWeightG && raw.totalWeightG.trim() !== '' ? Number(raw.totalWeightG) : null,
   });
 
   const created = await createMeal(input);
@@ -102,6 +103,7 @@ export async function updateMealAction(formData: FormData) {
     dietType: raw.dietType || null,
     allergens: parseArrayField(raw.allergens),
     allergensOverride: raw.allergensOverride === 'on',
+    totalWeightG: raw.totalWeightG && raw.totalWeightG.trim() !== '' ? Number(raw.totalWeightG) : null,
   });
 
   await updateMeal(id, input, expectedUpdatedAt || undefined);

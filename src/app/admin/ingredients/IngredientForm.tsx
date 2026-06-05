@@ -12,12 +12,15 @@ interface IngredientFormProps {
 const inputClass =
   'w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none';
 const labelClass = 'block text-sm font-medium text-neutral-700 mb-1';
+const STATUS_OPTIONS = ['draft', 'published', 'inactive'];
 
 export default function IngredientForm({ ingredient, action, submitLabel }: IngredientFormProps) {
   return (
     <form action={action} className="space-y-5">
       {ingredient && <input type="hidden" name="id" value={ingredient.id} />}
       <input type="hidden" name="allergens" id="ing_allergens" />
+      {/* Provenance is preserved on edit; defaults to manual for new entries. */}
+      <input type="hidden" name="source" value={ingredient?.source ?? 'manual'} />
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div>
@@ -88,6 +91,30 @@ export default function IngredientForm({ ingredient, action, submitLabel }: Ingr
               </label>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label className={labelClass}>Status</label>
+          <select name="status" defaultValue={ingredient?.status ?? 'draft'} className={inputClass}>
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-neutral-400">
+            Only published ingredients can be attached to meals.
+          </p>
+        </div>
+        <div>
+          <label className={labelClass}>Source</label>
+          <input
+            value={ingredient?.source ?? 'manual'}
+            disabled
+            className={`${inputClass} bg-neutral-100 text-neutral-500`}
+          />
         </div>
       </div>
 

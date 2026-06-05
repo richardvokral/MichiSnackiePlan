@@ -3,8 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth';
-import { createIngredient, updateIngredient, deleteIngredient } from '@/lib/repository';
+import {
+  createIngredient,
+  updateIngredient,
+  deleteIngredient,
+  setIngredientStatus,
+} from '@/lib/repository';
 import { ingredientInputSchema } from '@/lib/repository/ingredients';
+import { IngredientStatus } from '@/lib/types';
 
 function parseArrayField(value: string | undefined): string[] {
   if (!value) return [];
@@ -28,6 +34,8 @@ function parseForm(formData: FormData) {
     allergens: parseArrayField(formData.get('allergens') as string),
     dietType: (formData.get('dietType') as string) || null,
     usdaFdcId: (formData.get('usdaFdcId') as string) || null,
+    status: (formData.get('status') as string) || 'draft',
+    source: (formData.get('source') as string) || 'manual',
   });
 }
 
@@ -53,4 +61,13 @@ export async function deleteIngredientAction(formData: FormData) {
   await deleteIngredient(id);
   revalidatePath('/admin/ingredients');
   redirect('/admin/ingredients');
+}
+
+export async function setIngredientStatusAction(formData: FormData) {
+  await requireAdmin();
+  const id = formData.get('id') as string;
+  const status = formData.get('status') as IngredientStatus;
+  await setIngredientStatus(id, status);
+  revalidatePath('/admin/ingredients');
+  revalidatePath('/'); // publishing/unpublishing changes what's selectable in meal builders
 }

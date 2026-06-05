@@ -31,6 +31,7 @@ export const mealInputSchema = z.object({
   dietType: dietTypeSchema.nullable().default(null),
   allergens: z.array(z.string().max(50)).default([]),
   allergensOverride: z.boolean().default(false),
+  totalWeightG: z.number().nonnegative().nullable().default(null),
 });
 
 export type MealInput = z.infer<typeof mealInputSchema>;
@@ -54,6 +55,7 @@ interface MealRow {
   allergens: string[] | null;
   allergens_override: boolean | null;
   owner_user_id: string | null;
+  total_weight_g: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -78,6 +80,7 @@ function rowToMeal(row: MealRow): Meal {
     allergens: row.allergens ?? [],
     allergensOverride: row.allergens_override ?? false,
     ownerUserId: row.owner_user_id ?? null,
+    totalWeightG: row.total_weight_g === null ? null : Number(row.total_weight_g),
   };
 }
 
@@ -122,8 +125,8 @@ export async function createMeal(input: MealInput): Promise<Meal> {
   const sql = getDb();
   const id = data.id || `meal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const rows = await sql`
-    INSERT INTO meals (id, name, description, meal_slot_allowed, category, main_protein, protein_group, carb_base, meal_style, fruit_or_veg, tags, emoji, image_url, status, diet_type, allergens, allergens_override)
-    VALUES (${id}, ${data.name}, ${data.description}, ${data.mealSlotAllowed}, ${data.category}, ${data.mainProtein}, ${data.proteinGroup}, ${data.carbBase}, ${data.mealStyle}, ${data.fruitOrVeg}, ${data.tags}, ${data.emoji}, ${data.imageUrl}, ${data.status}, ${data.dietType}, ${data.allergens}, ${data.allergensOverride})
+    INSERT INTO meals (id, name, description, meal_slot_allowed, category, main_protein, protein_group, carb_base, meal_style, fruit_or_veg, tags, emoji, image_url, status, diet_type, allergens, allergens_override, total_weight_g)
+    VALUES (${id}, ${data.name}, ${data.description}, ${data.mealSlotAllowed}, ${data.category}, ${data.mainProtein}, ${data.proteinGroup}, ${data.carbBase}, ${data.mealStyle}, ${data.fruitOrVeg}, ${data.tags}, ${data.emoji}, ${data.imageUrl}, ${data.status}, ${data.dietType}, ${data.allergens}, ${data.allergensOverride}, ${data.totalWeightG})
     RETURNING *
   `;
   return rowToMeal(rows[0] as MealRow);
@@ -166,6 +169,8 @@ export async function updateMeal(
     allergens: input.allergens ?? current.allergens ?? [],
     allergens_override:
       input.allergensOverride !== undefined ? input.allergensOverride : (current.allergens_override ?? false),
+    total_weight_g:
+      input.totalWeightG !== undefined ? input.totalWeightG : current.total_weight_g,
   };
 
   const rows = await sql`
@@ -186,6 +191,7 @@ export async function updateMeal(
       diet_type = ${merged.diet_type},
       allergens = ${merged.allergens},
       allergens_override = ${merged.allergens_override},
+      total_weight_g = ${merged.total_weight_g},
       updated_at = now()
     WHERE id = ${id}
     RETURNING *

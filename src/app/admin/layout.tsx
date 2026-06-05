@@ -19,6 +19,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/ingredients" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
             Ingredients
           </Link>
+          <Link href="/admin/ai" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
+            AI Studio
+          </Link>
           <Link href="/admin/config" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
             Recommendation Model
           </Link>
