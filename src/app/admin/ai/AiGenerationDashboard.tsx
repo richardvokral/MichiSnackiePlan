@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import {
   startIngredientNamesJob,
   startIngredientUsdaJob,
+  startIngredientReviewJob,
   startMealsJob,
   processNextBatch,
 } from './actions';
@@ -19,10 +20,17 @@ const btnClass =
 const TYPE_LABEL: Record<string, string> = {
   ingredient_names: 'Generating ingredient names',
   ingredient_usda: 'Loading nutrition from USDA',
+  ingredient_review: 'Reviewing draft ingredients',
   meals: 'Generating foods',
 };
 
-export default function AiGenerationDashboard({ pendingCandidates }: { pendingCandidates: number }) {
+export default function AiGenerationDashboard({
+  pendingCandidates,
+  unreviewedDrafts,
+}: {
+  pendingCandidates: number;
+  unreviewedDrafts: number;
+}) {
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [running, setRunning] = useState(false);
   const [namesTarget, setNamesTarget] = useState(20);
@@ -61,6 +69,10 @@ export default function AiGenerationDashboard({ pendingCandidates }: { pendingCa
     if (running) return;
     await drive(await startMealsJob(mealsTarget));
   }
+  async function startReview() {
+    if (running) return;
+    await drive(await startIngredientReviewJob());
+  }
   async function resume() {
     if (running || !progress) return;
     await drive({ ...progress, status: 'running', done: false });
@@ -78,7 +90,7 @@ export default function AiGenerationDashboard({ pendingCandidates }: { pendingCa
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className={cardClass}>
           <h3 className="font-semibold text-neutral-800">1. Ingredient names</h3>
           <p className="mt-1 text-xs text-neutral-500">
@@ -114,9 +126,20 @@ export default function AiGenerationDashboard({ pendingCandidates }: { pendingCa
         </div>
 
         <div className={cardClass}>
-          <h3 className="font-semibold text-neutral-800">3. Foods</h3>
+          <h3 className="font-semibold text-neutral-800">3. Review drafts</h3>
           <p className="mt-1 text-xs text-neutral-500">
-            AI proposes new foods with ingredients &amp; weights (≤100% of total). Lands as drafts.
+            AI checks each draft ingredient, fills missing nutrition/allergens/diet, and notes issues.
+          </p>
+          <p className="mt-2 text-xs font-medium text-neutral-600">{unreviewedDrafts} unreviewed draft(s)</p>
+          <button onClick={startReview} disabled={running} className={`${btnClass} mt-3`}>
+            Review drafts
+          </button>
+        </div>
+
+        <div className={cardClass}>
+          <h3 className="font-semibold text-neutral-800">4. Foods</h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            AI proposes new foods using only published ingredients (weights ≤100% of total). Lands as drafts.
           </p>
           <div className="mt-3 flex items-end gap-2">
             <div>

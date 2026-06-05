@@ -73,6 +73,9 @@ export default async function AdminIngredientsPage({
                 {ing.source !== 'manual' ? ` · ${ing.source}` : ''}
                 {ing.usdaFdcId ? ` · USDA ${ing.usdaFdcId}` : ''}
               </p>
+              {ing.reviewNote && (
+                <p className="mt-0.5 truncate text-xs text-purple-500">AI review: {ing.reviewNote}</p>
+              )}
             </div>
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusBadge(ing.status)}`}>
               {ing.status}

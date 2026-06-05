@@ -36,6 +36,7 @@ interface IngredientRow {
   usda_fdc_id: string | null;
   status: string | null;
   source: string | null;
+  review_note: string | null;
 }
 
 function num(value: string | null): number | null {
@@ -55,6 +56,7 @@ function rowToIngredient(row: IngredientRow): Ingredient {
     usdaFdcId: row.usda_fdc_id,
     status: (row.status as IngredientStatus | null) ?? 'published',
     source: (row.source as Ingredient['source'] | null) ?? 'manual',
+    reviewNote: row.review_note,
   };
 }
 
@@ -137,6 +139,54 @@ export async function updateIngredient(id: string, input: IngredientInput): Prom
   `;
   if (rows.length === 0) throw new Error('Ingredient not found');
   return rowToIngredient(rows[0] as IngredientRow);
+}
+
+// ---- Draft-ingredient review queue (the "Review drafts" AI job) ----
+// An unreviewed draft has review_note IS NULL. The job drains this queue 10 at a
+// time, writing a note (and filling missing fields) so each pass makes progress.
+
+export async function countUnreviewedDraftIngredients(): Promise<number> {
+  const sql = getDb();
+  const rows = await sql`SELECT count(*)::int AS n FROM ingredients WHERE status = 'draft' AND review_note IS NULL`;
+  return (rows[0] as { n: number }).n;
+}
+
+export async function getUnreviewedDraftIngredients(limit: number): Promise<Ingredient[]> {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT * FROM ingredients
+    WHERE status = 'draft' AND review_note IS NULL
+    ORDER BY created_at
+    LIMIT ${limit}
+  `;
+  return (rows as IngredientRow[]).map(rowToIngredient);
+}
+
+export interface IngredientReviewPatch {
+  calories: number | null;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  allergens: string[];
+  dietType: DietType | null;
+  reviewNote: string;
+}
+
+// Applies the (already merged) reviewed values and stamps the review note.
+export async function applyIngredientReview(id: string, patch: IngredientReviewPatch): Promise<void> {
+  const sql = getDb();
+  await sql`
+    UPDATE ingredients SET
+      calories = ${patch.calories},
+      protein_g = ${patch.proteinG},
+      carbs_g = ${patch.carbsG},
+      fat_g = ${patch.fatG},
+      allergens = ${patch.allergens},
+      diet_type = ${patch.dietType},
+      review_note = ${patch.reviewNote},
+      updated_at = now()
+    WHERE id = ${id}
+  `;
 }
 
 export async function setIngredientStatus(id: string, status: IngredientStatus): Promise<Ingredient> {

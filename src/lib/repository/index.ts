@@ -25,8 +25,11 @@ export {
   updateIngredient,
   setIngredientStatus,
   deleteIngredient,
+  countUnreviewedDraftIngredients,
+  getUnreviewedDraftIngredients,
+  applyIngredientReview,
 } from './ingredients';
-export type { IngredientInput } from './ingredients';
+export type { IngredientInput, IngredientReviewPatch } from './ingredients';
 
 export {
   getMealIngredients,

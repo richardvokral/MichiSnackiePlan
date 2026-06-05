@@ -57,6 +57,7 @@ export interface Ingredient {
   usdaFdcId: string | null; // USDA FoodData Central id, set when loaded/enriched from USDA
   status: IngredientStatus; // draft until reviewed; only published ingredients are selectable in meals
   source: IngredientSource; // manual | ai | usda
+  reviewNote?: string | null; // AI review note; null = not yet reviewed by the "Review drafts" job
 }
 
 // An ingredient attached to a meal with an amount. `ingredient` is hydrated when

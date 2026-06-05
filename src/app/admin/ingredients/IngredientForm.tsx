@@ -118,6 +118,18 @@ export default function IngredientForm({ ingredient, action, submitLabel }: Ingr
         </div>
       </div>
 
+      {ingredient?.reviewNote && (
+        <div>
+          <label className={labelClass}>AI review note</label>
+          <textarea
+            value={ingredient.reviewNote}
+            disabled
+            rows={2}
+            className={`${inputClass} bg-neutral-100 text-neutral-500`}
+          />
+        </div>
+      )}
+
       <button
         type="submit"
         className="rounded-lg bg-purple-600 px-6 py-2 text-sm font-semibold text-white hover:bg-purple-700"

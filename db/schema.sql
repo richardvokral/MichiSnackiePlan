@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS ingredients (
   usda_fdc_id text,
   status      text NOT NULL DEFAULT 'draft',
   source      text NOT NULL DEFAULT 'manual',
+  review_note text,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
@@ -151,4 +152,4 @@ CREATE TABLE IF NOT EXISTS ai_config (
   updated_by      text
 );
 
-INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet'), ('004_ingredients'), ('005_user_meals'), ('006_favorites'), ('007_energy_unit'), ('008_ai_and_status') ON CONFLICT DO NOTHING;
+INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet'), ('004_ingredients'), ('005_user_meals'), ('006_favorites'), ('007_energy_unit'), ('008_ai_and_status'), ('009_ingredient_review') ON CONFLICT DO NOTHING;

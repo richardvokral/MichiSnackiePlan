@@ -199,6 +199,14 @@ const MIGRATIONS: Migration[] = [
       )`,
     ],
   },
+  {
+    version: '009_ingredient_review',
+    statements: [
+      // AI review notes for draft ingredients (the "Review drafts" job). NULL means
+      // not yet reviewed, which is also how the review queue finds pending drafts.
+      `ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS review_note text`,
+    ],
+  },
 ];
 
 // Post-run health probes. Each returns a single row with an `ok` boolean so we can
@@ -220,6 +228,7 @@ const VERIFY_CHECKS: { label: string; sql: string }[] = [
   { label: 'ingredients table', sql: `SELECT (to_regclass('public.ingredients') IS NOT NULL) AS ok` },
   { label: 'ingredients.status column', sql: columnExists('ingredients', 'status') },
   { label: 'ingredients.source column', sql: columnExists('ingredients', 'source') },
+  { label: 'ingredients.review_note column', sql: columnExists('ingredients', 'review_note') },
   { label: 'meal_ingredients table', sql: `SELECT (to_regclass('public.meal_ingredients') IS NOT NULL) AS ok` },
   { label: 'meals.total_weight_g column', sql: columnExists('meals', 'total_weight_g') },
   { label: 'user_favorites table', sql: `SELECT (to_regclass('public.user_favorites') IS NOT NULL) AS ok` },

@@ -15,13 +15,16 @@ import {
   getPublishedIngredients,
   getIngredientByName,
   createIngredientDraft,
+  countUnreviewedDraftIngredients,
+  getUnreviewedDraftIngredients,
+  applyIngredientReview,
   getAllMeals,
   createMeal,
   setMealIngredients,
   updateAiConfig,
 } from '@/lib/repository';
 import type { AiJob } from '@/lib/repository/aiJobs';
-import { generateIngredientNames, generateMeals } from '@/lib/ai/generate';
+import { generateIngredientNames, generateMeals, reviewIngredients } from '@/lib/ai/generate';
 import { resolveUsdaIngredient, UsdaError } from '@/lib/usda';
 import { checkMealWeight } from '@/lib/mealValidation';
 import { isDietType, DietType } from '@/lib/diet';
@@ -68,6 +71,13 @@ export async function startMealsJob(target: number): Promise<BatchProgress> {
   return toProgress(job);
 }
 
+export async function startIngredientReviewJob(): Promise<BatchProgress> {
+  const admin = await requireAdmin();
+  const pending = await countUnreviewedDraftIngredients();
+  const job = await createAiJob('ingredient_review', pending, {}, admin.email ?? undefined);
+  return toProgress(job);
+}
+
 // ---- Incremental processing: one batch of <=10 per call ----
 
 export async function processNextBatch(jobId: string): Promise<BatchProgress> {
@@ -80,6 +90,7 @@ export async function processNextBatch(jobId: string): Promise<BatchProgress> {
     let updated: AiJob;
     if (job.type === 'ingredient_names') updated = await runIngredientNamesBatch(job);
     else if (job.type === 'ingredient_usda') updated = await runIngredientUsdaBatch(job);
+    else if (job.type === 'ingredient_review') updated = await runIngredientReviewBatch(job);
     else updated = await runMealsBatch(job);
     revalidatePath('/admin/ingredients');
     revalidatePath('/admin/meals');
@@ -165,13 +176,82 @@ async function runIngredientUsdaBatch(job: AiJob): Promise<AiJob> {
   return updateAiJobProgress(job.id, { processedCount: processed, createdCount: created, errorCount: errors, status });
 }
 
+async function runIngredientReviewBatch(job: AiJob): Promise<AiJob> {
+  const drafts = await getUnreviewedDraftIngredients(BATCH_SIZE);
+  if (drafts.length === 0) return updateAiJobProgress(job.id, { status: 'done' });
+
+  const suggestions = await reviewIngredients(
+    drafts.map((d) => ({
+      id: d.id,
+      name: d.name,
+      calories: d.calories,
+      proteinG: d.proteinG,
+      carbsG: d.carbsG,
+      fatG: d.fatG,
+      allergens: d.allergens,
+      dietType: d.dietType,
+    })),
+  );
+  const byId = new Map(suggestions.map((s) => [s.id, s]));
+
+  let processed = job.processedCount;
+  let created = job.createdCount; // here: ingredients reviewed/updated
+  let errors = job.errorCount;
+
+  for (const d of drafts) {
+    const s = byId.get(d.id);
+    if (!s) {
+      // Still stamp a note so this draft leaves the queue (avoids re-looping).
+      await applyIngredientReview(d.id, {
+        calories: d.calories,
+        proteinG: d.proteinG,
+        carbsG: d.carbsG,
+        fatG: d.fatG,
+        allergens: d.allergens,
+        dietType: isDietType(d.dietType) ? (d.dietType as DietType) : null,
+        reviewNote: 'Not reviewed by AI (no suggestion returned).',
+      });
+      errors += 1;
+      processed += 1;
+      continue;
+    }
+    // Fill only MISSING fields (don't overwrite good USDA data); always record the note.
+    const dietType = isDietType(d.dietType)
+      ? (d.dietType as DietType)
+      : isDietType(s.dietType)
+        ? (s.dietType as DietType)
+        : null;
+    await applyIngredientReview(d.id, {
+      calories: d.calories ?? s.calories,
+      proteinG: d.proteinG ?? s.proteinG,
+      carbsG: d.carbsG ?? s.carbsG,
+      fatG: d.fatG ?? s.fatG,
+      allergens: d.allergens.length > 0 ? d.allergens : s.allergens,
+      dietType,
+      reviewNote: s.note || (s.ok ? 'Reviewed — complete and plausible.' : 'Reviewed.'),
+    });
+    created += 1;
+    processed += 1;
+  }
+
+  const remaining = await countUnreviewedDraftIngredients();
+  const status = remaining === 0 ? 'done' : 'running';
+  return updateAiJobProgress(job.id, { processedCount: processed, createdCount: created, errorCount: errors, status });
+}
+
 async function runMealsBatch(job: AiJob): Promise<AiJob> {
   const remaining = job.targetCount - job.processedCount;
   if (remaining <= 0) return updateAiJobProgress(job.id, { status: 'done' });
 
   const batch = Math.min(BATCH_SIZE, remaining);
+  const published = await getPublishedIngredients();
+  if (published.length === 0) {
+    throw new Error('No published ingredients available. Publish some ingredients before generating foods.');
+  }
+  // Constrain generation to published names; map back to ids strictly (drop anything not published).
+  const publishedByName = new Map(published.map((i) => [i.name.toLowerCase(), i]));
+  const ingNames = published.map((i) => i.name).slice(0, 400);
   const existingMealNames = (await getAllMeals()).map((m) => m.name).slice(0, 400);
-  const ingNames = (await getPublishedIngredients()).map((i) => i.name).slice(0, 400);
   const meals = await generateMeals({ names: existingMealNames, ingredientNames: ingNames }, batch);
 
   let created = job.createdCount;
@@ -189,24 +269,17 @@ async function runMealsBatch(job: AiJob): Promise<AiJob> {
       continue;
     }
 
-    // Map ingredient names → ids; auto-create missing ones as AI drafts.
+    // Strictly map ingredient names → existing PUBLISHED ingredients; drop unknowns.
     const rows: { ingredientId: string; quantity: number; unit: string }[] = [];
     for (const ing of m.ingredients) {
-      let existing = await getIngredientByName(ing.name);
-      if (!existing) {
-        existing = await createIngredientDraft({
-          name: ing.name,
-          calories: null,
-          proteinG: null,
-          carbsG: null,
-          fatG: null,
-          allergens: [],
-          dietType: null,
-          usdaFdcId: null,
-          source: 'ai',
-        });
-      }
-      rows.push({ ingredientId: existing.id, quantity: ing.quantityG, unit: 'g' });
+      const match = publishedByName.get(ing.name.toLowerCase());
+      if (!match) continue;
+      rows.push({ ingredientId: match.id, quantity: ing.quantityG, unit: 'g' });
+    }
+    if (rows.length === 0) {
+      errors += 1;
+      lastError = `${m.name}: no valid published ingredients — skipped`;
+      continue;
     }
 
     const createdMeal = await createMeal({

@@ -1,5 +1,10 @@
 import Link from 'next/link';
-import { listAiJobs, countAllPendingCandidates, getAiConfig } from '@/lib/repository';
+import {
+  listAiJobs,
+  countAllPendingCandidates,
+  countUnreviewedDraftIngredients,
+  getAiConfig,
+} from '@/lib/repository';
 import AiGenerationDashboard from './AiGenerationDashboard';
 
 export const dynamic = 'force-dynamic';
@@ -7,6 +12,7 @@ export const dynamic = 'force-dynamic';
 const TYPE_LABEL: Record<string, string> = {
   ingredient_names: 'Ingredient names',
   ingredient_usda: 'USDA load',
+  ingredient_review: 'Draft review',
   meals: 'Foods',
 };
 
@@ -21,9 +27,10 @@ const statusBadge = (status: string) => {
 };
 
 export default async function AdminAiPage() {
-  const [jobs, pending, settings] = await Promise.all([
+  const [jobs, pending, unreviewedDrafts, settings] = await Promise.all([
     listAiJobs(10),
     countAllPendingCandidates(),
+    countUnreviewedDraftIngredients(),
     getAiConfig(),
   ]);
 
@@ -49,7 +56,7 @@ export default async function AdminAiPage() {
       </p>
 
       <div className="mt-6">
-        <AiGenerationDashboard pendingCandidates={pending} />
+        <AiGenerationDashboard pendingCandidates={pending} unreviewedDrafts={unreviewedDrafts} />
       </div>
 
       <h2 className="mt-8 text-lg font-semibold text-neutral-800">Recent jobs</h2>

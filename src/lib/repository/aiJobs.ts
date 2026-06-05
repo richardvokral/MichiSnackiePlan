@@ -1,7 +1,7 @@
 import 'server-only';
 import { getDb } from '@/lib/db/client';
 
-export type AiJobType = 'ingredient_names' | 'ingredient_usda' | 'meals';
+export type AiJobType = 'ingredient_names' | 'ingredient_usda' | 'ingredient_review' | 'meals';
 export type AiJobStatus = 'pending' | 'running' | 'done' | 'error';
 
 export interface AiJob {
