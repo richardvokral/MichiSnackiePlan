@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS user_diet_preferences (
   user_id    text PRIMARY KEY,
   diet_type  text,
   allergies  text[] NOT NULL DEFAULT '{}',
+  energy_unit text,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -107,4 +108,4 @@ CREATE TABLE IF NOT EXISTS user_favorites (
 
 CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id);
 
-INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet'), ('004_ingredients'), ('005_user_meals'), ('006_favorites') ON CONFLICT DO NOTHING;
+INSERT INTO schema_migrations (version) VALUES ('001_init'), ('002_user_data'), ('003_diet'), ('004_ingredients'), ('005_user_meals'), ('006_favorites'), ('007_energy_unit') ON CONFLICT DO NOTHING;

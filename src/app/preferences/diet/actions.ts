@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { setUserDietPreferences, getUserDietPreferences } from '@/lib/repository';
+import { setUserDietPreferences, getUserDietPreferences, setUserEnergyUnit } from '@/lib/repository';
 import { DIET_TYPES, ALLERGENS } from '@/lib/diet';
+import { EnergyUnit, isEnergyUnit } from '@/lib/units';
 import { z } from 'zod/v4';
 
 const prefsSchema = z.object({
@@ -51,4 +52,13 @@ export async function importDietPreferencesAction(prefs: {
   await setUserDietPreferences(user.id, result.data);
   revalidatePath('/');
   return { imported: true };
+}
+
+export async function setEnergyUnitAction(unit: string): Promise<{ unit: EnergyUnit }> {
+  const user = await requireUser();
+  const resolved: EnergyUnit = isEnergyUnit(unit) ? unit : 'kcal';
+  await setUserEnergyUnit(user.id, resolved);
+  revalidatePath('/');
+  revalidatePath('/preferences/diet');
+  return { unit: resolved };
 }

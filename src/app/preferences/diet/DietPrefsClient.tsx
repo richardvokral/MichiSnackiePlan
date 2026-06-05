@@ -11,12 +11,15 @@ import {
   DietPreferences,
 } from '@/lib/diet';
 import { getDietPrefsSnapshot, saveDietPrefs } from '@/lib/dietStore';
+import { EnergyUnit } from '@/lib/units';
 import RegisterPrompt from '@/components/RegisterPrompt';
+import EnergyUnitToggle from '@/components/EnergyUnitToggle';
 import { saveDietPreferencesAction } from './actions';
 
 interface DietPrefsClientProps {
   isAuthenticated: boolean;
   initialPrefs: DietPreferences | null;
+  initialEnergyUnit: EnergyUnit;
 }
 
 interface DietDraft {
@@ -26,7 +29,11 @@ interface DietDraft {
 
 const emptySubscribe = () => () => {};
 
-export default function DietPrefsClient({ isAuthenticated, initialPrefs }: DietPrefsClientProps) {
+export default function DietPrefsClient({
+  isAuthenticated,
+  initialPrefs,
+  initialEnergyUnit,
+}: DietPrefsClientProps) {
   // Base values: signed-in users come from the server prop; anonymous users read
   // this device's localStorage copy via useSyncExternalStore (null during SSR).
   const stored = useSyncExternalStore(emptySubscribe, getDietPrefsSnapshot, () => null);
@@ -155,6 +162,12 @@ export default function DietPrefsClient({ isAuthenticated, initialPrefs }: DietP
               </button>
             </div>
           )}
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold text-neutral-700">Energy units</h2>
+          <p className="mt-1 mb-2 text-xs text-neutral-400">How energy is shown on meals.</p>
+          <EnergyUnitToggle isAuthenticated={isAuthenticated} initialUnit={initialEnergyUnit} />
         </div>
       </div>
 

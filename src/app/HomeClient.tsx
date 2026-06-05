@@ -194,6 +194,7 @@ export default function HomeClient({
                 slotState={slotState}
                 mealMap={mealMap}
                 date={journeyDate}
+                isAuthenticated={isAuthenticated}
               />
             ))}
           </div>

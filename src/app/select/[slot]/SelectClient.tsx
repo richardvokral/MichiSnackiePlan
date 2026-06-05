@@ -14,6 +14,7 @@ import { toggleFavoriteAction } from '@/app/favorites/actions';
 import StepProgress from '@/components/StepProgress';
 import MealOptionCard from '@/components/MealOptionCard';
 import RegisterPrompt from '@/components/RegisterPrompt';
+import Modal from '@/components/Modal';
 
 interface SelectClientProps {
   slot: MealSlotId;
@@ -45,6 +46,7 @@ export default function SelectClient({
   const [, startFavTransition] = useTransition();
   const [busyMealId, setBusyMealId] = useState<string | null>(null);
   const [showRegister, setShowRegister] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(() => new Set(favoriteIds));
 
   const stepIndex = SLOT_ORDER.indexOf(slot) + 1;
@@ -197,7 +199,7 @@ export default function SelectClient({
         {/* Skip */}
         <div className="mt-6">
           <button
-            onClick={handleSkip}
+            onClick={() => setShowSkipConfirm(true)}
             disabled={isPending}
             className="w-full py-2 text-center text-sm font-medium text-neutral-400 transition-colors hover:text-neutral-600 disabled:opacity-50"
           >
@@ -212,6 +214,32 @@ export default function SelectClient({
         title="Make your own meal"
         message="Register for free to create your own private meals and have them appear when you plan."
       />
+
+      <Modal open={showSkipConfirm} onClose={() => setShowSkipConfirm(false)} title="Skip this meal?">
+        <p className="text-sm leading-relaxed text-neutral-500">
+          Eating regularly keeps your energy steady. Skip just this one?
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowSkipConfirm(false);
+              handleSkip();
+            }}
+            disabled={isPending}
+            className="w-full rounded-full bg-neutral-700 py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-neutral-800 disabled:bg-neutral-300"
+          >
+            Skip this meal
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSkipConfirm(false)}
+            className="w-full py-2 text-center text-sm font-semibold text-purple-600 hover:text-purple-700"
+          >
+            Keep planning
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

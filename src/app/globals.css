@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* This is a light-only design. Without declaring a color-scheme, native UI
+   (select dropdowns, the required-field validation bubble, date pickers) follows
+   the OS theme and renders white-on-white on a dark-mode OS. Pin it to light. */
+:root {
+  color-scheme: light;
+}
+
+/* Belt-and-suspenders for select option popups. */
+select option {
+  color: var(--color-neutral-800);
+  background-color: #ffffff;
+}
+
 @theme inline {
   --font-sans: "Manrope", sans-serif;
   --color-purple-50: #f5f0f7;

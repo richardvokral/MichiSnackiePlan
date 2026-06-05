@@ -142,6 +142,12 @@ const MIGRATIONS: Migration[] = [
       `CREATE INDEX IF NOT EXISTS idx_user_favorites_user ON user_favorites(user_id)`,
     ],
   },
+  {
+    version: '007_energy_unit',
+    statements: [
+      `ALTER TABLE user_diet_preferences ADD COLUMN IF NOT EXISTS energy_unit text`,
+    ],
+  },
 ];
 
 // Post-run health probes. Each returns a single row with an `ok` boolean so we can
@@ -159,6 +165,7 @@ const VERIFY_CHECKS: { label: string; sql: string }[] = [
   { label: 'user_daily_plans table', sql: `SELECT (to_regclass('public.user_daily_plans') IS NOT NULL) AS ok` },
   { label: 'user_meal_preferences table', sql: `SELECT (to_regclass('public.user_meal_preferences') IS NOT NULL) AS ok` },
   { label: 'user_diet_preferences table', sql: `SELECT (to_regclass('public.user_diet_preferences') IS NOT NULL) AS ok` },
+  { label: 'user_diet_preferences.energy_unit column', sql: columnExists('user_diet_preferences', 'energy_unit') },
   { label: 'ingredients table', sql: `SELECT (to_regclass('public.ingredients') IS NOT NULL) AS ok` },
   { label: 'meal_ingredients table', sql: `SELECT (to_regclass('public.meal_ingredients') IS NOT NULL) AS ok` },
   { label: 'user_favorites table', sql: `SELECT (to_regclass('public.user_favorites') IS NOT NULL) AS ok` },

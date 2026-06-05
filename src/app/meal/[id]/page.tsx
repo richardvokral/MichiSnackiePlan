@@ -1,9 +1,12 @@
-import { getMealDetail } from '@/lib/repository';
+import { getMealDetail, getUserEnergyUnit } from '@/lib/repository';
+import { getCurrentUser } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Tag from '@/components/Tag';
+import NutritionPanel from '@/components/NutritionPanel';
 import { Allergen, ALLERGEN_LABELS, DietType, DIET_LABELS } from '@/lib/diet';
+import { EnergyUnit } from '@/lib/units';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +18,9 @@ export default async function MealDetailPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const detail = await getMealDetail(id);
   if (!detail) notFound();
+
+  const user = await getCurrentUser();
+  const serverUnit: EnergyUnit | null = user ? await getUserEnergyUnit(user.id) : null;
 
   const { meal, ingredients, nutrition } = detail;
   const allergens = meal.allergens ?? [];
@@ -63,28 +69,7 @@ export default async function MealDetailPage({ params }: { params: Promise<{ id:
           {ingredients.length === 0 ? (
             <p className="mt-2 text-sm text-neutral-400">No ingredients listed yet.</p>
           ) : (
-            <>
-              <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-                {([
-                  ['Calories', nutrition.calories, 'kcal'],
-                  ['Protein', nutrition.proteinG, 'g'],
-                  ['Carbs', nutrition.carbsG, 'g'],
-                  ['Fat', nutrition.fatG, 'g'],
-                ] as const).map(([label, value, unit]) => (
-                  <div key={label} className="rounded-xl bg-neutral-50 py-3">
-                    <p className="text-lg font-bold text-neutral-800">{value}</p>
-                    <p className="text-[11px] text-neutral-400">
-                      {label} ({unit})
-                    </p>
-                  </div>
-                ))}
-              </div>
-              {nutrition.approximate && (
-                <p className="mt-2 text-xs text-neutral-400">
-                  Approximate — some ingredients use non-weight units or lack full nutrition data.
-                </p>
-              )}
-            </>
+            <NutritionPanel nutrition={nutrition} serverUnit={serverUnit} />
           )}
         </div>
 

@@ -64,6 +64,8 @@ export type { MealPreferences } from './preferences';
 export {
   getUserDietPreferences,
   setUserDietPreferences,
+  getUserEnergyUnit,
+  setUserEnergyUnit,
 } from './dietPreferences';
 
 export {
