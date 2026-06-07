@@ -28,8 +28,42 @@ export {
   countUnreviewedDraftIngredients,
   getUnreviewedDraftIngredients,
   applyIngredientReview,
+  publishReviewedIngredientsWithNutrition,
+  countPublishableDraftIngredients,
+  getExistingIngredientNamesLower,
 } from './ingredients';
 export type { IngredientInput, IngredientReviewPatch } from './ingredients';
+
+export {
+  listArchetypes,
+  getArchetype,
+  countArchetypes,
+  getArchetypeNames,
+  createArchetype,
+  upsertArchetypeByName,
+  updateArchetype,
+  deleteArchetype,
+} from './archetypes';
+export type { MealArchetype, ArchetypeInput } from './archetypes';
+
+export {
+  createGeneratedMeal,
+  listGeneratedMealsByStatus,
+  getPendingGeneratedMeals,
+  countGeneratedMealsByStatus,
+  countCardsForArchetype,
+  getCardCountsByArchetype,
+  getAllPendingIngredientNames,
+  markGeneratedMealFinalized,
+  markGeneratedMealRejected,
+  resetGeneratedData,
+} from './generatedMeals';
+export type { GeneratedMeal, GeneratedMealInput, IngredientSpec, GeneratedMealStatus } from './generatedMeals';
+
+export {
+  getMealValidationConfig,
+  updateMealValidationConfig,
+} from './mealValidationConfig';
 
 export {
   getMealIngredients,
@@ -65,6 +99,7 @@ export {
   getPendingCandidates,
   getAnyPendingCandidates,
   getJobCandidateNames,
+  getPendingCandidateNames,
   markCandidate,
 } from './aiJobs';
 export type { AiJob, AiJobType, AiJobStatus, IngredientCandidate } from './aiJobs';

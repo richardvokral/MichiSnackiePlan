@@ -207,6 +207,57 @@ const MIGRATIONS: Migration[] = [
       `ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS review_note text`,
     ],
   },
+  {
+    version: '010_meals_pipeline',
+    statements: [
+      // Reusable dish archetypes (e.g. "Yogurt bowl") — AI-seeded, admin-editable.
+      `CREATE TABLE IF NOT EXISTS meal_archetypes (
+        id          text PRIMARY KEY,
+        name        text NOT NULL,
+        slot_hint   text,                            -- breakfast|snack|lunch|dinner (validation bucket)
+        description text NOT NULL DEFAULT '',
+        example     text NOT NULL DEFAULT '',
+        sort_order  integer NOT NULL DEFAULT 0,
+        enabled     boolean NOT NULL DEFAULT true,
+        created_at  timestamptz NOT NULL DEFAULT now(),
+        updated_at  timestamptz NOT NULL DEFAULT now()
+      )`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_meal_archetypes_name ON meal_archetypes(lower(name))`,
+      // Staging "meal cards": ingredients held as name+grams jsonb, decoupled from the
+      // ingredients FK, until finalized into a real meal + meal_ingredients.
+      `CREATE TABLE IF NOT EXISTS generated_meals (
+        id                text PRIMARY KEY,
+        archetype_id      text REFERENCES meal_archetypes(id) ON DELETE SET NULL,
+        name              text NOT NULL,
+        description       text NOT NULL DEFAULT '',
+        emoji             text NOT NULL DEFAULT '',
+        slot_hint         text,                       -- breakfast|snack|lunch|dinner (validation bucket)
+        meal_slot_allowed text[] NOT NULL DEFAULT '{}',
+        category          text NOT NULL DEFAULT '',
+        main_protein      text NOT NULL DEFAULT '',
+        protein_group     text NOT NULL DEFAULT 'plant',
+        carb_base         text NOT NULL DEFAULT '',
+        meal_style        text[] NOT NULL DEFAULT '{}',
+        fruit_or_veg      text NOT NULL DEFAULT 'none',
+        total_weight_g    numeric,
+        ingredients_spec  jsonb NOT NULL DEFAULT '[]', -- [{ name, grams }]
+        status            text NOT NULL DEFAULT 'pending', -- pending|finalized|rejected
+        reject_reason     text,
+        meal_id           text REFERENCES meals(id) ON DELETE SET NULL,
+        created_at        timestamptz NOT NULL DEFAULT now(),
+        updated_at        timestamptz NOT NULL DEFAULT now()
+      )`,
+      `CREATE INDEX IF NOT EXISTS idx_generated_meals_status ON generated_meals(status)`,
+      `CREATE INDEX IF NOT EXISTS idx_generated_meals_archetype ON generated_meals(archetype_id)`,
+      // Per-slot kcal/protein validation rules (single row id='default').
+      `CREATE TABLE IF NOT EXISTS meal_validation_config (
+        id          text PRIMARY KEY,
+        config      jsonb NOT NULL,
+        updated_at  timestamptz NOT NULL DEFAULT now(),
+        updated_by  text
+      )`,
+    ],
+  },
 ];
 
 // Post-run health probes. Each returns a single row with an `ok` boolean so we can
@@ -235,6 +286,10 @@ const VERIFY_CHECKS: { label: string; sql: string }[] = [
   { label: 'ai_generation_jobs table', sql: `SELECT (to_regclass('public.ai_generation_jobs') IS NOT NULL) AS ok` },
   { label: 'ai_ingredient_candidates table', sql: `SELECT (to_regclass('public.ai_ingredient_candidates') IS NOT NULL) AS ok` },
   { label: 'ai_config table', sql: `SELECT (to_regclass('public.ai_config') IS NOT NULL) AS ok` },
+  { label: 'meal_archetypes table', sql: `SELECT (to_regclass('public.meal_archetypes') IS NOT NULL) AS ok` },
+  { label: 'generated_meals table', sql: `SELECT (to_regclass('public.generated_meals') IS NOT NULL) AS ok` },
+  { label: 'generated_meals.ingredients_spec column', sql: columnExists('generated_meals', 'ingredients_spec') },
+  { label: 'meal_validation_config table', sql: `SELECT (to_regclass('public.meal_validation_config') IS NOT NULL) AS ok` },
 ];
 
 function columnExists(table: string, column: string): string {

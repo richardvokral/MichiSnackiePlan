@@ -1,5 +1,6 @@
 import { getMigrationStatus } from '@/lib/repository';
 import MigrationRunner from './MigrationRunner';
+import ClearDataPanel from './ClearDataPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,10 @@ export default async function MigrationsPage() {
 
       <div className="mt-6">
         <MigrationRunner initialStatus={status} dbConfigured={dbConfigured} />
+      </div>
+
+      <div className="mt-6">
+        <ClearDataPanel />
       </div>
     </div>
   );

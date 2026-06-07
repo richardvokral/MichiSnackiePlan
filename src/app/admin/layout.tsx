@@ -25,6 +25,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/config" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
             Recommendation Model
           </Link>
+          <Link href="/admin/meal-rules" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
+            Meal Rules
+          </Link>
           <Link href="/admin/admins" className="text-sm font-medium text-neutral-600 hover:text-purple-600">
             Admins
           </Link>

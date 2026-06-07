@@ -1,11 +1,14 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import {
-  startIngredientNamesJob,
+  startArchetypesJob,
+  startMealVariantsJob,
+  startExtractIngredientsJob,
   startIngredientUsdaJob,
   startIngredientReviewJob,
-  startMealsJob,
+  startFinalizeMealsJob,
+  publishIngredientsAction,
   processNextBatch,
 } from './actions';
 import type { BatchProgress } from '@/lib/ai/batchTypes';
@@ -13,28 +16,36 @@ import type { BatchProgress } from '@/lib/ai/batchTypes';
 const cardClass = 'rounded-xl bg-white p-5 shadow-sm';
 const labelClass = 'block text-sm font-medium text-neutral-700 mb-1';
 const inputClass =
-  'w-28 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none';
+  'w-24 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none';
 const btnClass =
   'rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 disabled:bg-neutral-300';
 
 const TYPE_LABEL: Record<string, string> = {
-  ingredient_names: 'Generating ingredient names',
+  archetypes: 'Generating archetypes',
+  meal_variants: 'Generating meal variants',
+  extract_ingredients: 'Extracting ingredients',
   ingredient_usda: 'Loading nutrition from USDA',
   ingredient_review: 'Reviewing draft ingredients',
-  meals: 'Generating foods',
+  finalize_meals: 'Finalizing meals',
 };
 
-export default function AiGenerationDashboard({
-  pendingCandidates,
-  unreviewedDrafts,
-}: {
+interface DashboardProps {
+  archetypeCount: number;
+  pendingCards: number;
+  finalizedCards: number;
+  rejectedCards: number;
   pendingCandidates: number;
   unreviewedDrafts: number;
-}) {
+  publishableDrafts: number;
+}
+
+export default function AiGenerationDashboard(props: DashboardProps) {
   const [progress, setProgress] = useState<BatchProgress | null>(null);
   const [running, setRunning] = useState(false);
-  const [namesTarget, setNamesTarget] = useState(20);
-  const [mealsTarget, setMealsTarget] = useState(10);
+  const [archetypeTarget, setArchetypeTarget] = useState(30);
+  const [perArchetype, setPerArchetype] = useState(5);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+  const [publishing, startPublish] = useTransition();
   const cancelRef = useRef(false);
 
   async function drive(initial: BatchProgress) {
@@ -57,22 +68,26 @@ export default function AiGenerationDashboard({
     }
   }
 
-  async function startNames() {
+  const guard = (fn: () => Promise<BatchProgress>) => async () => {
     if (running) return;
-    await drive(await startIngredientNamesJob(namesTarget));
+    await drive(await fn());
+  };
+  const startArchetypes = guard(() => startArchetypesJob(archetypeTarget));
+  const startVariants = guard(() => startMealVariantsJob(perArchetype));
+  const startExtract = guard(() => startExtractIngredientsJob());
+  const startUsda = guard(() => startIngredientUsdaJob());
+  const startReview = guard(() => startIngredientReviewJob());
+  const startFinalize = guard(() => startFinalizeMealsJob());
+
+  function publish() {
+    if (publishing) return;
+    setPublishMsg(null);
+    startPublish(async () => {
+      const r = await publishIngredientsAction();
+      setPublishMsg(`Published ${r.published} ingredient(s).`);
+    });
   }
-  async function startUsda() {
-    if (running) return;
-    await drive(await startIngredientUsdaJob());
-  }
-  async function startMeals() {
-    if (running) return;
-    await drive(await startMealsJob(mealsTarget));
-  }
-  async function startReview() {
-    if (running) return;
-    await drive(await startIngredientReviewJob());
-  }
+
   async function resume() {
     if (running || !progress) return;
     await drive({ ...progress, status: 'running', done: false });
@@ -92,71 +107,106 @@ export default function AiGenerationDashboard({
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className={cardClass}>
-          <h3 className="font-semibold text-neutral-800">1. Ingredient names</h3>
+          <h3 className="font-semibold text-neutral-800">1. Archetypes</h3>
           <p className="mt-1 text-xs text-neutral-500">
-            AI proposes new ingredient names (10 per batch), seeded with what you already have.
+            AI proposes reusable dish templates (Yogurt bowl, Oatmeal…).
           </p>
-          <div className="mt-3 flex items-end gap-2">
+          <p className="mt-2 text-xs font-medium text-neutral-600">{props.archetypeCount} archetype(s)</p>
+          <div className="mt-2 flex items-end gap-2">
             <div>
-              <label className={labelClass}>How many</label>
+              <label className={labelClass}>Target</label>
               <input
                 type="number"
                 min={1}
-                max={2000}
-                value={namesTarget}
-                onChange={(e) => setNamesTarget(Number(e.target.value))}
+                max={100}
+                value={archetypeTarget}
+                onChange={(e) => setArchetypeTarget(Number(e.target.value))}
                 className={inputClass}
               />
             </div>
-            <button onClick={startNames} disabled={running} className={btnClass}>
+            <button onClick={startArchetypes} disabled={running} className={btnClass}>
               Generate
             </button>
           </div>
         </div>
 
         <div className={cardClass}>
-          <h3 className="font-semibold text-neutral-800">2. Load from USDA</h3>
+          <h3 className="font-semibold text-neutral-800">2. Meal variants</h3>
           <p className="mt-1 text-xs text-neutral-500">
-            Enrich pending names with USDA nutrition and land them as draft ingredients.
+            AI generates variants per enabled archetype as staged cards.
           </p>
-          <p className="mt-2 text-xs font-medium text-neutral-600">{pendingCandidates} pending name(s)</p>
+          <p className="mt-2 text-xs font-medium text-neutral-600">{props.pendingCards} pending card(s)</p>
+          <div className="mt-2 flex items-end gap-2">
+            <div>
+              <label className={labelClass}>Per archetype</label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={perArchetype}
+                onChange={(e) => setPerArchetype(Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <button onClick={startVariants} disabled={running} className={btnClass}>
+              Generate
+            </button>
+          </div>
+        </div>
+
+        <div className={cardClass}>
+          <h3 className="font-semibold text-neutral-800">3. Extract ingredients</h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            Collect unique ingredient names from staged cards and queue the new ones.
+          </p>
+          <button onClick={startExtract} disabled={running} className={`${btnClass} mt-3`}>
+            Extract
+          </button>
+        </div>
+
+        <div className={cardClass}>
+          <h3 className="font-semibold text-neutral-800">4. Load from USDA</h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            Enrich queued ingredients with USDA nutrition as draft ingredients.
+          </p>
+          <p className="mt-2 text-xs font-medium text-neutral-600">{props.pendingCandidates} queued</p>
           <button onClick={startUsda} disabled={running} className={`${btnClass} mt-3`}>
             Load from USDA
           </button>
         </div>
 
         <div className={cardClass}>
-          <h3 className="font-semibold text-neutral-800">3. Review drafts</h3>
-          <p className="mt-1 text-xs text-neutral-500">
-            AI checks each draft ingredient, fills missing nutrition/allergens/diet, and notes issues.
-          </p>
-          <p className="mt-2 text-xs font-medium text-neutral-600">{unreviewedDrafts} unreviewed draft(s)</p>
+          <h3 className="font-semibold text-neutral-800">5. Review drafts</h3>
+          <p className="mt-1 text-xs text-neutral-500">AI checks/fills draft ingredient nutrition.</p>
+          <p className="mt-2 text-xs font-medium text-neutral-600">{props.unreviewedDrafts} unreviewed</p>
           <button onClick={startReview} disabled={running} className={`${btnClass} mt-3`}>
             Review drafts
           </button>
         </div>
 
         <div className={cardClass}>
-          <h3 className="font-semibold text-neutral-800">4. Foods</h3>
+          <h3 className="font-semibold text-neutral-800">6. Publish ingredients</h3>
           <p className="mt-1 text-xs text-neutral-500">
-            AI proposes new foods using only published ingredients (weights ≤100% of total). Lands as drafts.
+            Publish reviewed drafts that have nutrition, so meals can use them.
           </p>
-          <div className="mt-3 flex items-end gap-2">
-            <div>
-              <label className={labelClass}>How many</label>
-              <input
-                type="number"
-                min={1}
-                max={500}
-                value={mealsTarget}
-                onChange={(e) => setMealsTarget(Number(e.target.value))}
-                className={inputClass}
-              />
-            </div>
-            <button onClick={startMeals} disabled={running} className={btnClass}>
-              Generate
-            </button>
-          </div>
+          <p className="mt-2 text-xs font-medium text-neutral-600">{props.publishableDrafts} ready</p>
+          <button onClick={publish} disabled={publishing} className={`${btnClass} mt-3`}>
+            {publishing ? 'Publishing…' : 'Publish'}
+          </button>
+          {publishMsg && <p className="mt-2 text-xs text-green-600">{publishMsg}</p>}
+        </div>
+
+        <div className={cardClass}>
+          <h3 className="font-semibold text-neutral-800">7. Finalize meals</h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            Turn fully-paired, valid cards into draft meals (rest rejected with a reason).
+          </p>
+          <p className="mt-2 text-xs font-medium text-neutral-600">
+            {props.pendingCards} pending · {props.finalizedCards} done · {props.rejectedCards} rejected
+          </p>
+          <button onClick={startFinalize} disabled={running} className={`${btnClass} mt-3`}>
+            Finalize
+          </button>
         </div>
       </div>
 
@@ -199,9 +249,7 @@ export default function AiGenerationDashboard({
               </button>
             )}
           </div>
-          {progress.lastError && (
-            <p className="mt-2 text-xs text-red-500">{progress.lastError}</p>
-          )}
+          {progress.lastError && <p className="mt-2 text-xs text-red-500">{progress.lastError}</p>}
         </div>
       )}
     </div>

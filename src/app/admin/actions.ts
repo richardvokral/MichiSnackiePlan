@@ -9,11 +9,17 @@ import {
   setMealStatus,
   setMealIngredients,
   updateRecommendationConfig,
+  updateMealValidationConfig,
   addAdmin,
   removeAdmin,
 } from '@/lib/repository';
 import { mealInputSchema } from '@/lib/repository/meals';
 import { RecommendationConfig } from '@/lib/recommendationConfig';
+import {
+  MealValidationConfig,
+  DEFAULT_MEAL_VALIDATION_CONFIG,
+  SLOT_BUCKETS,
+} from '@/lib/mealValidationConfig';
 import { MealCatalogStatus } from '@/lib/types';
 import { z } from 'zod/v4';
 
@@ -157,6 +163,37 @@ export async function updateConfigAction(formData: FormData) {
   await updateRecommendationConfig(config, admin.email ?? undefined);
   revalidatePath('/admin/config');
   revalidatePath('/');
+}
+
+export async function updateMealValidationAction(formData: FormData) {
+  const admin = await requireAdmin();
+
+  const d = DEFAULT_MEAL_VALIDATION_CONFIG;
+  const numOr = (key: string, fallback: number): number => {
+    const n = Number(formData.get(key));
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  const kcal = {} as MealValidationConfig['kcal'];
+  for (const slot of SLOT_BUCKETS) {
+    kcal[slot] = {
+      min: numOr(`kcal_${slot}_min`, d.kcal[slot].min),
+      max: numOr(`kcal_${slot}_max`, d.kcal[slot].max),
+    };
+  }
+
+  const config: MealValidationConfig = {
+    enabled: formData.get('enabled') === 'on',
+    kcal,
+    protein: {
+      proteinMealMinG: numOr('proteinMealMinG', d.protein.proteinMealMinG),
+      highProteinMinG: numOr('highProteinMinG', d.protein.highProteinMinG),
+    },
+    requireUsdaMatch: formData.get('requireUsdaMatch') === 'on',
+  };
+
+  await updateMealValidationConfig(config, admin.email ?? undefined);
+  revalidatePath('/admin/meal-rules');
 }
 
 const emailSchema = z.email();

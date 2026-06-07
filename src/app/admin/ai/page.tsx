@@ -3,6 +3,9 @@ import {
   listAiJobs,
   countAllPendingCandidates,
   countUnreviewedDraftIngredients,
+  countPublishableDraftIngredients,
+  countArchetypes,
+  countGeneratedMealsByStatus,
   getAiConfig,
 } from '@/lib/repository';
 import AiGenerationDashboard from './AiGenerationDashboard';
@@ -10,10 +13,12 @@ import AiGenerationDashboard from './AiGenerationDashboard';
 export const dynamic = 'force-dynamic';
 
 const TYPE_LABEL: Record<string, string> = {
-  ingredient_names: 'Ingredient names',
+  archetypes: 'Archetypes',
+  meal_variants: 'Meal variants',
+  extract_ingredients: 'Extract ingredients',
   ingredient_usda: 'USDA load',
   ingredient_review: 'Draft review',
-  meals: 'Foods',
+  finalize_meals: 'Finalize meals',
 };
 
 const statusBadge = (status: string) => {
@@ -27,10 +32,25 @@ const statusBadge = (status: string) => {
 };
 
 export default async function AdminAiPage() {
-  const [jobs, pending, unreviewedDrafts, settings] = await Promise.all([
+  const [
+    jobs,
+    pending,
+    unreviewedDrafts,
+    publishableDrafts,
+    archetypeCount,
+    pendingCards,
+    finalizedCards,
+    rejectedCards,
+    settings,
+  ] = await Promise.all([
     listAiJobs(10),
     countAllPendingCandidates(),
     countUnreviewedDraftIngredients(),
+    countPublishableDraftIngredients(),
+    countArchetypes(),
+    countGeneratedMealsByStatus('pending'),
+    countGeneratedMealsByStatus('finalized'),
+    countGeneratedMealsByStatus('rejected'),
     getAiConfig(),
   ]);
 
@@ -38,9 +58,14 @@ export default async function AdminAiPage() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-800">AI Studio</h1>
-        <Link href="/admin/ai/settings" className="text-sm font-medium text-purple-600 hover:text-purple-800">
-          Model settings →
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/admin/ai/archetypes" className="text-sm font-medium text-purple-600 hover:text-purple-800">
+            Edit archetypes →
+          </Link>
+          <Link href="/admin/ai/settings" className="text-sm font-medium text-purple-600 hover:text-purple-800">
+            Model settings →
+          </Link>
+        </div>
       </div>
       <p className="mt-2 text-sm text-neutral-500">
         Generating with <strong>{settings.provider}</strong> / <strong>{settings.model}</strong>. Items
@@ -56,7 +81,15 @@ export default async function AdminAiPage() {
       </p>
 
       <div className="mt-6">
-        <AiGenerationDashboard pendingCandidates={pending} unreviewedDrafts={unreviewedDrafts} />
+        <AiGenerationDashboard
+          archetypeCount={archetypeCount}
+          pendingCards={pendingCards}
+          finalizedCards={finalizedCards}
+          rejectedCards={rejectedCards}
+          pendingCandidates={pending}
+          unreviewedDrafts={unreviewedDrafts}
+          publishableDrafts={publishableDrafts}
+        />
       </div>
 
       <h2 className="mt-8 text-lg font-semibold text-neutral-800">Recent jobs</h2>

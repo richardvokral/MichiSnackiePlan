@@ -1,7 +1,13 @@
 import 'server-only';
 import { getDb } from '@/lib/db/client';
 
-export type AiJobType = 'ingredient_names' | 'ingredient_usda' | 'ingredient_review' | 'meals';
+export type AiJobType =
+  | 'ingredient_usda'
+  | 'ingredient_review'
+  | 'archetypes'
+  | 'meal_variants'
+  | 'extract_ingredients'
+  | 'finalize_meals';
 export type AiJobStatus = 'pending' | 'running' | 'done' | 'error';
 
 export interface AiJob {
@@ -161,6 +167,14 @@ export async function getAnyPendingCandidates(limit: number): Promise<Ingredient
 export async function getJobCandidateNames(jobId: string): Promise<string[]> {
   const sql = getDb();
   const rows = await sql`SELECT name FROM ai_ingredient_candidates WHERE job_id = ${jobId}`;
+  return (rows as { name: string }[]).map((r) => r.name);
+}
+
+// Lowercased names still pending in the global candidate queue — used by extraction
+// to avoid re-enqueueing the same ingredient name twice.
+export async function getPendingCandidateNames(): Promise<string[]> {
+  const sql = getDb();
+  const rows = await sql`SELECT DISTINCT lower(name) AS name FROM ai_ingredient_candidates WHERE status = 'pending'`;
   return (rows as { name: string }[]).map((r) => r.name);
 }
 

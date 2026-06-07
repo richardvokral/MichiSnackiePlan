@@ -86,6 +86,15 @@ export async function getIngredientById(id: string): Promise<Ingredient | null> 
   return rowToIngredient(rows[0] as IngredientRow);
 }
 
+// Which of the given (lowercased) names already exist in the catalog — one query,
+// used by extraction to avoid re-enqueueing existing ingredients.
+export async function getExistingIngredientNamesLower(names: string[]): Promise<string[]> {
+  if (names.length === 0) return [];
+  const sql = getDb();
+  const rows = await sql`SELECT DISTINCT lower(name) AS name FROM ingredients WHERE lower(name) = ANY(${names}::text[])`;
+  return (rows as { name: string }[]).map((r) => r.name);
+}
+
 // Case-insensitive name lookup — used by the AI pipeline to avoid duplicates.
 export async function getIngredientByName(name: string): Promise<Ingredient | null> {
   const sql = getDb();
@@ -187,6 +196,27 @@ export async function applyIngredientReview(id: string, patch: IngredientReviewP
       updated_at = now()
     WHERE id = ${id}
   `;
+}
+
+// Bulk-publish draft ingredients that have been reviewed AND have nutrition — the
+// "Publish ingredients" pipeline step between Review and Finalize. Returns the count.
+export async function publishReviewedIngredientsWithNutrition(): Promise<number> {
+  const sql = getDb();
+  const rows = await sql`
+    UPDATE ingredients SET status = 'published', updated_at = now()
+    WHERE status = 'draft' AND calories IS NOT NULL AND review_note IS NOT NULL
+    RETURNING id
+  `;
+  return rows.length;
+}
+
+export async function countPublishableDraftIngredients(): Promise<number> {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT count(*)::int AS n FROM ingredients
+    WHERE status = 'draft' AND calories IS NOT NULL AND review_note IS NOT NULL
+  `;
+  return (rows[0] as { n: number }).n;
 }
 
 export async function setIngredientStatus(id: string, status: IngredientStatus): Promise<Ingredient> {
