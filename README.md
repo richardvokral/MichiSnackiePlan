@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Michi Snackie Plan 🥗
 
-## Getting Started
+A healthy-meal-suggestion app focused on **easy lean setup**: five sensible meals a day (breakfast, two snacks, lunch, dinner) suggested from a curated catalog by a variety-aware recommendation engine. Open the app, accept or swap today's plan, eat well.
 
-First, run the development server:
+- **Vision & principles**: [docs/VISION.md](docs/VISION.md)
+- **Roadmap & status**: [docs/ROADMAP.md](docs/ROADMAP.md)
+- **Change history**: [CHANGELOG.md](CHANGELOG.md)
+- **Technical map**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Agent/contributor guide**: [AGENTS.md](AGENTS.md)
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Neon Postgres · Logto auth (optional) · Anthropic API (AI meal generation) · USDA FoodData Central · Vercel Blob.
+
+## Quick start
 
 ```bash
+npm install
+cp .env.example .env.local   # fill in at least DATABASE_URL
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000, go to `/admin/migrations` and run the migrations (the app manages its own schema — there is no CLI migration step). Optionally seed the 20 starter meals with `scripts/import-initial-meals.sql` in the Neon console.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Without Logto configured the app runs fully anonymous (today-only plan in localStorage) and `/admin` is a dev pass-through while `AUTH_ENABLED=false`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment variables
 
-## Learn More
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | yes | Neon Postgres connection string |
+| `AUTH_ENABLED` | prod | `true` in production so `/admin` requires a Logto admin |
+| `FIRST_ADMIN_EMAIL` | prod | Bootstrap admin (always has admin access) |
+| `LOGTO_ENDPOINT` / `LOGTO_APP_ID` / `LOGTO_APP_SECRET` / `LOGTO_BASE_URL` / `LOGTO_COOKIE_SECRET` | optional | User sign-in → multi-day plans, preferences, favorites |
+| `ANTHROPIC_API_KEY` | optional | AI meal/ingredient generation (`/admin/ai`) |
+| `USDA_API_KEY` | optional | Ingredient nutrition lookup ([free key](https://fdc.nal.usda.gov/api-key-signup)) |
+| `BLOB_READ_WRITE_TOKEN` | optional | Vercel Blob (public store) for meal photos |
 
-To learn more about Next.js, take a look at the following resources:
+See `.env.example` for details and Logto redirect-URI setup.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `npm run dev` — dev server
+- `npm run build` && `npm run lint` — the quality gate (no test suite yet)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deployed on Vercel; database and Blob via the Vercel marketplace integrations.
