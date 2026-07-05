@@ -38,11 +38,16 @@ export async function isAdmin(email: string | null): Promise<boolean> {
   return isAdminEmail(email);
 }
 
+// Admin enforcement is always on in production — AUTH_ENABLED=false must never
+// expose /admin on a deployed app. Outside production the dev pass-through stays
+// available (unless AUTH_ENABLED=true forces enforcement) so the panel works
+// without a configured Logto tenant.
+export function isAdminAuthEnforced(): boolean {
+  return process.env.NODE_ENV === 'production' || process.env.AUTH_ENABLED === 'true';
+}
+
 export async function requireAdmin(): Promise<SessionUser> {
-  // TODO(LOGTO): AUTH_ENABLED gates real enforcement. While false, admin is a
-  // dev pass-through so the panel is reachable without a configured tenant.
-  const authEnabled = process.env.AUTH_ENABLED === 'true';
-  if (!authEnabled) {
+  if (!isAdminAuthEnforced()) {
     return {
       id: 'dev-admin',
       email: process.env.FIRST_ADMIN_EMAIL ?? 'admin@localhost',

@@ -1,4 +1,5 @@
 import { getDb } from '@/lib/db/client';
+import { isAdminAuthEnforced } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,9 +26,11 @@ export async function GET() {
     ok: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
   });
   checks.push({
-    name: 'AUTH_ENABLED',
+    name: 'Admin auth enforcement',
     ok: true,
-    detail: process.env.AUTH_ENABLED === 'true' ? 'enabled' : 'disabled (admin pass-through)',
+    detail: isAdminAuthEnforced()
+      ? 'enforced (production or AUTH_ENABLED=true)'
+      : 'dev pass-through (non-production only)',
   });
 
   const logtoConfigured = Boolean(

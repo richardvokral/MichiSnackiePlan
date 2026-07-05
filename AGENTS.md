@@ -29,7 +29,7 @@ Next.js 16 (App Router, RSC) · React 19 · TypeScript · Tailwind CSS 4 · Neon
 
 1. **Migrations live in three places.** Any schema change must update all of: a new file in `db/migrations/`, the `MIGRATIONS` registry + `VERIFY_CHECKS` in `src/lib/repository/migrations.ts` (the runtime source of truth — single idempotent statements only, the Neon HTTP driver can't run multi-statement strings), and the snapshot in `db/schema.sql`. Migrations are applied from `/admin/migrations`, not a CLI.
 2. **Config singletons**: `recommendation_config`, `ai_config`, and `meal_validation_config` are jsonb rows with `id='default'` merged over typed defaults in code. Extend the type and the defaults together.
-3. **Auth**: `AUTH_ENABLED` gates admin enforcement (see `src/lib/auth.ts`). Never weaken `requireAdmin` in a way that can reach production.
+3. **Auth**: admin enforcement is always on in production; `AUTH_ENABLED=true` additionally forces it in dev (`isAdminAuthEnforced` in `src/lib/auth.ts`). Never weaken `requireAdmin` in a way that can reach production.
 4. **CLAUDE.md stays exactly `@AGENTS.md`**, and the `nextjs-agent-rules` block at the top of this file must be preserved byte-identical (it is managed externally).
 
 ## Tracking convention — keep the docs alive

@@ -4,6 +4,8 @@ All notable changes to Michi Snackie Plan are documented here. Format loosely fo
 
 ## [Unreleased]
 
+- Auth hardening (D1): `/admin` enforcement is now always on in production regardless of `AUTH_ENABLED`; the no-sign-in pass-through only exists in local dev. `/api/health` reports the effective enforcement.
+- PWA (D6): web app manifest, generated app icons (regenerate with `node scripts/gen-icons.js public`), purple theme color, apple-touch-icon — the app is installable on phones.
 - Daily nutrition totals on Home (D2): kcal + protein card summing the day's selected meals, with kcal/kJ support and an "approximate" marker (batch ingredient fetch, `computeDayNutrition`).
 - Optional daily targets (D3): `/preferences/goals` with presets (Light & lean / Balanced / Active) or custom kcal + protein; migration `011_user_goals`. Strictly opt-in — no targets means plain totals, no nagging.
 - Auto-fill day + week planner (D4): ✨ Auto-fill fills every empty slot via the recommendation engine (variety + diet rules apply); new `/week` 7-day grid with per-day totals, auto-fill/clear, and week navigation.

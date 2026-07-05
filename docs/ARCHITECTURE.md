@@ -16,7 +16,7 @@ High-level technical map. Update this only when structure changes (new table, ne
 | Preferences / favorites | — | Postgres tables |
 | Enabled when | always | Logto env vars configured |
 
-`AUTH_ENABLED` additionally gates admin enforcement (`src/lib/auth.ts`); `FIRST_ADMIN_EMAIL` bootstraps the first admin.
+Admin enforcement is always on in production; in dev, `AUTH_ENABLED=true` forces it on, otherwise `/admin` is a local pass-through (`isAdminAuthEnforced` in `src/lib/auth.ts`). `FIRST_ADMIN_EMAIL` bootstraps the first admin.
 
 ## Main surfaces
 

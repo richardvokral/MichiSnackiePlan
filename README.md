@@ -22,7 +22,7 @@ npm run dev
 
 Then open http://localhost:3000, go to `/admin/migrations` and run the migrations (the app manages its own schema — there is no CLI migration step). Optionally seed the 20 starter meals with `scripts/import-initial-meals.sql` in the Neon console.
 
-Without Logto configured the app runs fully anonymous (today-only plan in localStorage) and `/admin` is a dev pass-through while `AUTH_ENABLED=false`.
+Without Logto configured the app runs fully anonymous (today-only plan in localStorage). In local development `/admin` is a no-sign-in pass-through while `AUTH_ENABLED=false`; production always enforces admin sign-in regardless of the flag.
 
 ## Environment variables
 

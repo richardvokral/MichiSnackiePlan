@@ -18,16 +18,16 @@ Convention: each phase gets a short section with checkboxes. Tick items as they 
 | ✅ AI-2 — Meals-first pipeline | Archetype pipeline pivot, meal export + reset |
 | ✅ Docs — Tracking system | AGENTS.md guide, vision/roadmap/changelog/architecture docs, real README |
 
-## Phase D — Lean Setup & Weekly Flow (🔨 in progress)
+## Phase D — Lean Setup & Weekly Flow (✅ done)
 
 Goal: make the "easy lean setup" promise concrete — day totals, optional targets, one-tap planning. Decision: targets are strictly **optional** — the app never nags about calories; without targets the day just shows plain totals.
 
-- [ ] **D1 — Auth hardening**: close the `AUTH_ENABLED` dev pass-through in `src/lib/auth.ts` (enforce in production / when Logto is configured), add a guard in `src/app/admin/layout.tsx`
+- [x] **D1 — Auth hardening**: `/admin` enforcement is always on in production regardless of `AUTH_ENABLED` (`isAdminAuthEnforced`); dev keeps the no-Logto pass-through
 - [x] **D2 — Daily nutrition totals on Home**: batch ingredient fetch for the day's meals, `computeDayNutrition`, kcal + protein card on the home screen
 - [x] **D3 — Goals quick-setup (optional)**: target kcal / protein in `user_diet_preferences` (migration 011), preset-based `/preferences/goals` page, home card shows progress-vs-target only when set
 - [x] **D4 — Auto-fill day + week view**: one-tap fill of empty slots via the existing recommendation engine; 7-day `/week` grid with per-day totals
 - [x] **D5 — Shopping list**: aggregate ingredients across planned meals for a date range, checklist with localStorage state
-- [ ] **D6 — PWA polish**: web manifest, icons, installable on phone
+- [x] **D6 — PWA polish**: `app/manifest.ts`, generated icons (`scripts/gen-icons.js`), theme color, apple-touch-icon — installable on phone
 
 ## Later / ideas
 

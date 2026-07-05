@@ -4,12 +4,22 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Michi Snackie Plan",
   description: "Your calm daily meal companion",
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Michi Snackie",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#7c3aed",
 };
 
 export default function RootLayout({
