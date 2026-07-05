@@ -7,9 +7,13 @@ import { getDailyPlanSnapshot, getCompletedCount, getActiveSlot } from '@/lib/st
 import { getDietPrefs, getDietPrefsSnapshot, clearDietPrefs } from '@/lib/dietStore';
 import { importDietPreferencesAction } from '@/app/preferences/diet/actions';
 import { getTodaysIntention } from '@/data/intentions';
+import { DayNutrition } from '@/lib/nutrition';
+import { UserGoals } from '@/lib/goals';
+import { EnergyUnit } from '@/lib/units';
 import GreetingHeader from '@/components/GreetingHeader';
 import IntentionCard from '@/components/IntentionCard';
 import DailyProgress from '@/components/DailyProgress';
+import DailyNutritionCard from '@/components/DailyNutritionCard';
 import MealJourneyItem from '@/components/MealJourneyItem';
 import FloatingActionButton from '@/components/FloatingActionButton';
 import BottomNav from '@/components/BottomNav';
@@ -47,6 +51,9 @@ interface HomeClientProps {
   date: string;
   isToday: boolean;
   hasDietPrefs: boolean;
+  dayNutrition: DayNutrition | null;
+  goals: UserGoals | null;
+  energyUnit: EnergyUnit;
 }
 
 export default function HomeClient({
@@ -58,6 +65,9 @@ export default function HomeClient({
   date,
   isToday,
   hasDietPrefs,
+  dayNutrition,
+  goals,
+  energyUnit,
 }: HomeClientProps) {
   // Anonymous users keep a today-only plan in localStorage; authenticated users
   // get their persisted plan for the selected day from the server.
@@ -182,6 +192,12 @@ export default function HomeClient({
         <div className="mt-5">
           <DailyProgress completed={completed} total={5} />
         </div>
+
+        {isAuthenticated && dayNutrition && (
+          <div className="mt-5">
+            <DailyNutritionCard nutrition={dayNutrition} goals={goals} serverUnit={energyUnit} />
+          </div>
+        )}
 
         <div className="mt-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-neutral-500">

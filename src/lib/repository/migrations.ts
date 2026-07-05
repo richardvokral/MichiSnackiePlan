@@ -258,6 +258,15 @@ const MIGRATIONS: Migration[] = [
       )`,
     ],
   },
+  {
+    version: '011_user_goals',
+    statements: [
+      // Optional daily targets. Both nullable: no target means the app just shows
+      // plain day totals — goals are opt-in by design.
+      `ALTER TABLE user_diet_preferences ADD COLUMN IF NOT EXISTS target_kcal integer`,
+      `ALTER TABLE user_diet_preferences ADD COLUMN IF NOT EXISTS target_protein_g integer`,
+    ],
+  },
 ];
 
 // Post-run health probes. Each returns a single row with an `ok` boolean so we can
@@ -276,6 +285,8 @@ const VERIFY_CHECKS: { label: string; sql: string }[] = [
   { label: 'user_meal_preferences table', sql: `SELECT (to_regclass('public.user_meal_preferences') IS NOT NULL) AS ok` },
   { label: 'user_diet_preferences table', sql: `SELECT (to_regclass('public.user_diet_preferences') IS NOT NULL) AS ok` },
   { label: 'user_diet_preferences.energy_unit column', sql: columnExists('user_diet_preferences', 'energy_unit') },
+  { label: 'user_diet_preferences.target_kcal column', sql: columnExists('user_diet_preferences', 'target_kcal') },
+  { label: 'user_diet_preferences.target_protein_g column', sql: columnExists('user_diet_preferences', 'target_protein_g') },
   { label: 'ingredients table', sql: `SELECT (to_regclass('public.ingredients') IS NOT NULL) AS ok` },
   { label: 'ingredients.status column', sql: columnExists('ingredients', 'status') },
   { label: 'ingredients.source column', sql: columnExists('ingredients', 'source') },

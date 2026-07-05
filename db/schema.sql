@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS user_diet_preferences (
   diet_type  text,
   allergies  text[] NOT NULL DEFAULT '{}',
   energy_unit text,
+  target_kcal integer,
+  target_protein_g integer,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 

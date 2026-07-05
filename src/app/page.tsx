@@ -1,5 +1,15 @@
 import { getCurrentUser, isAdmin } from '@/lib/auth';
-import { getPublishedMealsForUser, getUserPlan, getUserDietPreferences } from '@/lib/repository';
+import {
+  getPublishedMealsForUser,
+  getUserPlan,
+  getUserDietPreferences,
+  getMealIngredientsForMeals,
+  getUserEnergyUnit,
+  getUserGoals,
+} from '@/lib/repository';
+import { computeDayNutrition, DayNutrition } from '@/lib/nutrition';
+import { UserGoals } from '@/lib/goals';
+import { EnergyUnit } from '@/lib/units';
 import { DailyPlan, Meal } from '@/lib/types';
 import HomeClient from './HomeClient';
 
@@ -26,15 +36,30 @@ export default async function Home({
   let initialPlan: DailyPlan | null = null;
   let userIsAdmin = false;
   let hasDietPrefs = false;
+  let dayNutrition: DayNutrition | null = null;
+  let goals: UserGoals | null = null;
+  let energyUnit: EnergyUnit = 'kcal';
   if (user) {
-    const [plan, admin, dietPrefs] = await Promise.all([
+    const [plan, admin, dietPrefs, userGoals, unit] = await Promise.all([
       getUserPlan(user.id, selectedDate),
       isAdmin(user.email),
       getUserDietPreferences(user.id),
+      getUserGoals(user.id),
+      getUserEnergyUnit(user.id),
     ]);
     initialPlan = plan;
     userIsAdmin = admin;
     hasDietPrefs = Boolean(dietPrefs && (dietPrefs.dietType || dietPrefs.allergies.length > 0));
+    goals = userGoals;
+    energyUnit = unit;
+
+    const selectedIds = plan.slots
+      .map((s) => s.selectedMealId)
+      .filter((id): id is string => Boolean(id));
+    if (selectedIds.length > 0) {
+      const ingredientsByMealId = await getMealIngredientsForMeals(selectedIds);
+      dayNutrition = computeDayNutrition(selectedIds, ingredientsByMealId);
+    }
   }
 
   return (
@@ -47,6 +72,9 @@ export default async function Home({
       date={selectedDate}
       isToday={selectedDate === today}
       hasDietPrefs={hasDietPrefs}
+      dayNutrition={dayNutrition}
+      goals={goals}
+      energyUnit={energyUnit}
     />
   );
 }

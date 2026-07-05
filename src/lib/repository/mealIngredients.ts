@@ -47,6 +47,32 @@ function rowToMealIngredient(row: MealIngredientJoinRow): MealIngredient {
   };
 }
 
+// Batch variant for day/week totals and shopping lists: one query for many meals
+// instead of N single-meal lookups.
+export async function getMealIngredientsForMeals(
+  mealIds: string[],
+): Promise<Record<string, MealIngredient[]>> {
+  const byMeal: Record<string, MealIngredient[]> = {};
+  const unique = [...new Set(mealIds)];
+  if (unique.length === 0) return byMeal;
+  const sql = getDb();
+  const rows = await sql`
+    SELECT mi.meal_id, mi.ingredient_id, mi.quantity, mi.unit, mi.sort_order,
+           i.name AS i_name, i.calories AS i_calories, i.protein_g AS i_protein_g,
+           i.carbs_g AS i_carbs_g, i.fat_g AS i_fat_g, i.allergens AS i_allergens,
+           i.diet_type AS i_diet_type, i.usda_fdc_id AS i_usda_fdc_id,
+           i.status AS i_status, i.source AS i_source
+    FROM meal_ingredients mi
+    JOIN ingredients i ON i.id = mi.ingredient_id
+    WHERE mi.meal_id = ANY(${unique})
+    ORDER BY mi.sort_order, i.name
+  `;
+  for (const row of rows as (MealIngredientJoinRow & { meal_id: string })[]) {
+    (byMeal[row.meal_id] ??= []).push(rowToMealIngredient(row));
+  }
+  return byMeal;
+}
+
 export async function getMealIngredients(mealId: string): Promise<MealIngredient[]> {
   const sql = getDb();
   const rows = await sql`

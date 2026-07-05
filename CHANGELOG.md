@@ -4,6 +4,11 @@ All notable changes to Michi Snackie Plan are documented here. Format loosely fo
 
 ## [Unreleased]
 
+- Daily nutrition totals on Home (D2): kcal + protein card summing the day's selected meals, with kcal/kJ support and an "approximate" marker (batch ingredient fetch, `computeDayNutrition`).
+- Optional daily targets (D3): `/preferences/goals` with presets (Light & lean / Balanced / Active) or custom kcal + protein; migration `011_user_goals`. Strictly opt-in — no targets means plain totals, no nagging.
+- Auto-fill day + week planner (D4): ✨ Auto-fill fills every empty slot via the recommendation engine (variety + diet rules apply); new `/week` 7-day grid with per-day totals, auto-fill/clear, and week navigation.
+- Shopping list (D5): `/shopping` aggregates ingredients across planned meals for a date range (per-unit sums), checklist state kept in localStorage per range.
+- Bottom navigation now links to real destinations: Home, Week, Shopping, Settings.
 - Added in-repo tracking system: agent guide (`AGENTS.md`), `docs/VISION.md`, `docs/ROADMAP.md`, `docs/ARCHITECTURE.md`, this changelog, and a project-specific README.
 
 ## 2026-06-07 — Meals-first AI pipeline

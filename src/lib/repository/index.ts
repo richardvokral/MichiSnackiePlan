@@ -67,6 +67,7 @@ export {
 
 export {
   getMealIngredients,
+  getMealIngredientsForMeals,
   setMealIngredients,
 } from './mealIngredients';
 export type { MealIngredientInput } from './mealIngredients';
@@ -131,6 +132,8 @@ export {
   setUserDietPreferences,
   getUserEnergyUnit,
   setUserEnergyUnit,
+  getUserGoals,
+  setUserGoals,
 } from './dietPreferences';
 
 export {
