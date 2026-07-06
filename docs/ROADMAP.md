@@ -29,6 +29,16 @@ Goal: make the "easy lean setup" promise concrete — day totals, optional targe
 - [x] **D5 — Shopping list**: aggregate ingredients across planned meals for a date range, checklist with localStorage state
 - [x] **D6 — PWA polish**: `app/manifest.ts`, generated icons (`scripts/gen-icons.js`), theme color, apple-touch-icon — installable on phone
 
+## Phase G — Go-to-Market (⏳ planned)
+
+Full plan: `docs/GO_TO_MARKET.md` (onboarding funnel, subscription model, Google/Meta ads, AI marketing manual). Stages, in order:
+
+- [ ] **G0 — Productize**: landing/about page, funnel analytics events, privacy policy + terms, cookie consent, seeded catalog, stable deploy
+- [ ] **G1 — Soft launch**: free users, measure visit → auto-fill → return → registration funnel (~100 WAU target)
+- [ ] **G2 — Monetize**: Stripe Checkout + webhooks, `user_subscriptions` table, `isPlusUser()` gating (week/shopping/auto-fill), 7-day trial, pricing page
+- [ ] **G3 — Paid acquisition**: Google Search campaign + Meta Advantage+ with tracking, weekly AI-assisted review loop
+- [ ] **G4 — Retain & scale**: churn watch, win-back flow, monthly summary email
+
 ## Later / ideas
 
 - 💡 Meal photos in the user-facing flow (upload for private meals; `image_url` + Blob already exist)

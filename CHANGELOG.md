@@ -4,6 +4,7 @@ All notable changes to Michi Snackie Plan are documented here. Format loosely fo
 
 ## [Unreleased]
 
+- Go-to-market plan (`docs/GO_TO_MARKET.md`): onboarding journey, free→paid subscription model ("Michi Plus"), Google/Meta ads strategy, and a beginner's AI-assisted marketing manual; roadmap gains Phase G (G0–G4).
 - Auth hardening (D1): `/admin` enforcement is now always on in production regardless of `AUTH_ENABLED`; the no-sign-in pass-through only exists in local dev. `/api/health` reports the effective enforcement.
 - PWA (D6): web app manifest, generated app icons (regenerate with `node scripts/gen-icons.js public`), purple theme color, apple-touch-icon — the app is installable on phones.
 - Daily nutrition totals on Home (D2): kcal + protein card summing the day's selected meals, with kcal/kJ support and an "approximate" marker (batch ingredient fetch, `computeDayNutrition`).
